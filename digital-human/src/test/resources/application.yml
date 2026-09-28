@@ -1,0 +1,12 @@
+# 测试环境：只验证装配与参数校验，不发起真实模型调用
+spring:
+  ai:
+    dashscope:
+      api-key: test-key-not-used
+      chat:
+        options:
+          model: qwen-plus
+
+digital-human:
+  chat:
+    default-system: 你是一个数字人助手，回答简短、口语化。

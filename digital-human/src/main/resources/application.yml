@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: digital-human
+  ai:
+    dashscope:
+      # 密钥只从环境变量注入，禁止写进仓库
+      api-key: ${AI_DASHSCOPE_API_KEY:}
+      chat:
+        options:
+          # 模型名收敛为配置项，便于切换与启动期校验
+          model: qwen-plus
+
+digital-human:
+  chat:
+    # System Prompt 属于配置：同一份代码服务多个数字人项目
+    default-system: 你是一个数字人助手，回答简短、口语化。
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.example.digitalhuman: info
