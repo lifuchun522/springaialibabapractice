@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: digital-human
+  ai:
+    model:
+      # 本项目只提供一条模型通道：DeepSeek（OpenAI 兼容协议）。
+      # 系列基线是 DashScope，等需要它的章节（第 3 掌语音、第 8 掌 Embedding）再按章引入，
+      # 现在不留「引了但不用」的通道——不用它，就不该在启动期向它要密钥。
+      chat: openai
+      # 本掌只用到对话能力，其余模态显式关闭
+      embedding: none
+      image: none
+      video: none
+      rerank: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
+    openai:
+      # 密钥只从环境变量注入，禁止写进仓库
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      chat:
+        options:
+          # 模型名收敛为配置项，便于切换与启动期校验
+          model: ${DEEPSEEK_MODEL:deepseek-flash}
+
+digital-human:
+  chat:
+    # System Prompt 属于配置：同一份代码服务多个数字人项目
+    default-system: 你是一个数字人助手，回答简短、口语化。
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.example.digitalhuman: info
