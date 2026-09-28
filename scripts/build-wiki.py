@@ -9,13 +9,15 @@ OUT = r"D:\src\github\dh-wiki-staging"
 REPO_URL = "https://github.com/lifuchun522/springaialibabapractice"
 
 CHAPTERS = [
-    (1, "亢龙有悔", "识势选型", "chapter/01-value-selection", "ch01", 2, "2752108"),
+    (1, "亢龙有悔", "识势选型", "chapter/01-value-selection", "ch01", 1, "2752108"),
     (2, "飞龙在天", "筑基环境", "chapter/02-baseline-env", "ch02", 3, "2752106"),
     (3, "见龙在田", "数字人底座", "chapter/03-digital-human-demo", "ch03", 7, "2752105"),
     (4, "鸿渐于陆", "御模对话", "chapter/04-chat-model", "ch04", 9, "2752104"),
     (5, "潜龙勿用", "藏忆流式", "chapter/05-memory-streaming", "ch05", 11, "2752103"),
     (6, "利涉大川", "御器工具", "chapter/06-tools", "ch06", 13, "2752102"),
     (7, "突如其来", "通玄 MCP", "chapter/07-mcp", "ch07", 16, "2752101"),
+    (8, "震惊百里", "入藏 RAG", "chapter/08-rag", "ch08", 19, "2752097"),
+    (9, "或跃在渊", "ReactAgent", "chapter/09-react-agent", "ch09", 26, "2752096"),
 ]
 
 DELIVERED = {
@@ -26,6 +28,8 @@ DELIVERED = {
     5: "会话记忆（conversationId 三层键）+ SSE 流式 + 消息账本四态（完成/取消/失败）",
     6: "只读/写工具分流 + enum 白名单 Schema + 人类确认门禁 + 工具审计与超时边界",
     7: "展厅预约拆成独立 MCP Server + MCP Client 远程发现与调用 + 错误分层",
+    8: "项目级知识库：元数据契约（projectId/docName/chunkIndex）+ 过滤检索 + 系统渲染出处 + 无依据拒答（不调模型）",
+    9: "ReactAgent 主脑 + 节点事件流 + 模型调用硬上界（显式结束）+ 工具边界有限重试 + 账本随主脑一起落",
 }
 
 OUTSTANDING = {
@@ -36,6 +40,8 @@ OUTSTANDING = {
     5: "落库仍在响应式回调里阻塞；Memory 仍为内存态；无断线续传与 token 预算",
     6: "REJECTED 审计态未真实产生；审计表无归档分页；工具结果未进账本；超时值全局一刀切",
     7: "MCP Server 无认证；地址仍硬编码配置；无重试熔断；工具描述无变更评审",
+    8: "向量化是词法实现（不理解同义）；内存向量库不跨实例；FAQ 可能被切开；单跳检索；无评测集",
+    9: "每请求重建 Agent（含图编译）；无跨请求记忆；事件非流式；上界值待评测决定；重试无退避",
 }
 
 
@@ -130,7 +136,7 @@ home.append("|----|-------------|------|------|----------|")
 for n, gua, topic, branch, tag, pr, _ in CHAPTERS:
     home.append("| %d | [%s · %s](%s) | `%s` | `%s` | %s |"
                 % (n, gua, topic, "ch%02d-%s" % (n, topic.replace(" ", "-")), branch, tag, DELIVERED[n]))
-home.append("| 8～18 | 待做 |  |  |  |")
+home.append("| 10～18 | 待做 |  |  |  |")
 home.append("")
 home.append("## 六、写在最前面的三条判断")
 home.append("")
@@ -199,12 +205,17 @@ for n, gua, topic, branch, tag, pr, article in CHAPTERS:
 
     page.append("---")
     page.append("")
-    page.append("返回 [Home](Home) ｜ 下一掌：[第 %d 掌](%s)"
-                % (n + 1, "ch%02d-未开始" % (n + 1)) if n < 18 else "返回 [Home](Home)")
+    # 下一掌的页面只在它已经生成时才给链接，否则 wiki 上会留一堆点不开的红链
+    done = [n for n, *_ in CHAPTERS]
+    if n + 1 in done:
+        page.append("返回 [Home](Home) ｜ 下一掌：[第 %d 掌](%s)"
+                    % (n + 1, "ch%02d-%s" % (n + 1, dict((c[0], c[2]) for c in CHAPTERS)[n + 1])))
+    else:
+        page.append("返回 [Home](Home) ｜ 下一掌：第 %d 掌（待做）" % (n + 1))
     page.append("")
     page.append("> 本掌与文章口径的差异、以及实测中发现的坑，都写在仓库的 `docs/ch%02d-验收记录.md` 里，不做粉饰。" % n)
 
-    name = "ch%02d-%s.md" % (n, topic)
+    name = "ch%02d-%s.md" % (n, topic.replace(" ", "-"))
     with open(os.path.join(OUT, name), "w", encoding="utf-8") as handle:
         handle.write("\n".join(page) + "\n")
     written.append(name)
