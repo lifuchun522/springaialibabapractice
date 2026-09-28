@@ -123,4 +123,22 @@ public class ProjectController {
                 "project", ProjectResponse.of(view.project()),
                 "agent", AgentConfigResponse.of(view.agentConfig()));
     }
+
+    public record AgentRequest(String provider,
+                               String model,
+                               String systemPrompt,
+                               java.math.BigDecimal temperature,
+                               Integer maxTokens) {
+    }
+
+    /** 改人设与模型：只动数据，不动代码，也不重启服务。 */
+    @PutMapping("/{id}/agent")
+    public AgentConfigResponse updateAgent(@RequestHeader("X-Token") String token,
+                                           @PathVariable Long id,
+                                           @RequestBody AgentRequest request) {
+        Long ownerId = authService.requireUserId(token);
+        return AgentConfigResponse.of(projectService.updateAgent(ownerId, id,
+                new ProjectService.AgentCommand(request.provider(), request.model(),
+                        request.systemPrompt(), request.temperature(), request.maxTokens())));
+    }
 }

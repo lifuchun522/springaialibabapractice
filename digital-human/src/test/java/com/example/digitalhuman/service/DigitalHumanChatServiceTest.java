@@ -36,7 +36,8 @@ class DigitalHumanChatServiceTest {
 
     private static DigitalHumanChatService serviceWith(ChatModel chatModel, AgentConfigRepository configs) {
         return new DigitalHumanChatService(ChatClient.builder(chatModel).build(), configs,
-                new DigitalHumanChatProperties("你是一个数字人助手，回答简短、口语化。"));
+                new DigitalHumanChatProperties("你是一个数字人助手，回答简短、口语化。"),
+                new com.example.digitalhuman.ai.ChatOptionsFactory());
     }
 
     @Test

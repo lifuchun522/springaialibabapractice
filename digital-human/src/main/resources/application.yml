@@ -45,6 +45,17 @@ digital-human:
   chat:
     # 新建项目时写入 agent_config 的默认人设；运营可在项目里改，改完刷新运行页即生效
     default-system: 你是一个专业的数字人主播，回答简洁友好。
+  # 模型目录：有哪些 provider、每个 provider 下有哪些模型，全部是配置。
+  # agent_config.provider / model 必须命中这里，否则改配置时直接 400、启动期也不会带病运行。
+  models:
+    - id: deepseek-flash
+      provider: deepseek
+      display-name: DeepSeek V4.1 Flash
+      description: 默认模型，速度快、成本低，适合数字人日常对话
+    - id: deepseek-v4-pro
+      provider: deepseek
+      display-name: DeepSeek V4 Pro
+      description: 复杂推理与长文档场景，成本更高
 
 management:
   endpoints:
