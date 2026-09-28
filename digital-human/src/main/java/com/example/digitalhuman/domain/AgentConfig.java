@@ -20,6 +20,7 @@ import jakarta.persistence.Table;
 public class AgentConfig {
 
     private static final String DEFAULT_SYSTEM_PROMPT = "你是一个专业的数字人主播，回答简洁友好。";
+    public static final String DEFAULT_PROVIDER = "deepseek";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,6 +28,10 @@ public class AgentConfig {
 
     @Column(name = "project_id", nullable = false, unique = true)
     private Long projectId;
+
+    /** provider 才是路由键：决定请求打到哪个 endpoint、用哪套鉴权头。 */
+    @Column(name = "provider", nullable = false, length = 32)
+    private String provider = DEFAULT_PROVIDER;
 
     @Column(name = "model", nullable = false, length = 64)
     private String model = "deepseek-flash";
@@ -56,6 +61,16 @@ public class AgentConfig {
 
     public Long getProjectId() {
         return projectId;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        if (provider != null && !provider.isBlank()) {
+            this.provider = provider;
+        }
     }
 
     public String getModel() {

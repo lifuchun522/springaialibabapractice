@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.digitalhuman.ai.ModelCatalog;
 import com.example.digitalhuman.config.DigitalHumanChatProperties;
 import com.example.digitalhuman.domain.AgentConfig;
 import com.example.digitalhuman.domain.DigitalHumanProject;
@@ -22,13 +23,16 @@ public class ProjectService {
     private final DigitalHumanProjectRepository projects;
     private final AgentConfigRepository agentConfigs;
     private final DigitalHumanChatProperties chatProperties;
+    private final ModelCatalog modelCatalog;
 
     public ProjectService(DigitalHumanProjectRepository projects,
                           AgentConfigRepository agentConfigs,
-                          DigitalHumanChatProperties chatProperties) {
+                          DigitalHumanChatProperties chatProperties,
+                          ModelCatalog modelCatalog) {
         this.projects = projects;
         this.agentConfigs = agentConfigs;
         this.chatProperties = chatProperties;
+        this.modelCatalog = modelCatalog;
     }
 
     /** 创建项目与其一对一 Agent 配置，配置默认值来自 application.yml 而不是硬编码。 */
@@ -106,6 +110,31 @@ public class ProjectService {
         return value.trim();
     }
 
+    /**
+     * 改项目的 Agent 配置：provider / model 必须先在模型目录里，改完立即生效，不需要重启。
+     *
+     * <p>这一条就是第 4 掌的验收点——「用哪个模型」是数据，不是代码。
+     */
+    @Transactional
+    public AgentConfig updateAgent(Long ownerId, Long projectId, AgentCommand command) {
+        requireOwned(ownerId, projectId);
+
+        AgentConfig config = agentConfigs.findByProjectId(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("项目缺少 Agent 配置：" + projectId));
+
+        String provider = requireText(command.provider(), "provider 不能为空");
+        String model = requireText(command.model(), "model 不能为空");
+        // 不在目录里就直接拒掉，而不是等到调用时才发现模型名写错
+        modelCatalog.require(provider, model);
+
+        config.setProvider(provider);
+        config.setModel(model);
+        config.setSystemPrompt(command.systemPrompt());
+        config.setTemperature(command.temperature());
+        config.setMaxTokens(command.maxTokens() == null ? config.getMaxTokens() : command.maxTokens());
+        return agentConfigs.save(config);
+    }
+
     public record ProjectCommand(String name,
                                  String title,
                                  String themeColor,
@@ -114,6 +143,13 @@ public class ProjectService {
                                  String closingLine,
                                  String status,
                                  String systemPrompt) {
+    }
+
+    public record AgentCommand(String provider,
+                               String model,
+                               String systemPrompt,
+                               java.math.BigDecimal temperature,
+                               Integer maxTokens) {
     }
 
     public record RuntimeView(DigitalHumanProject project, AgentConfig agentConfig) {

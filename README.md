@@ -78,6 +78,19 @@ Issue（本章要落的能力与验收标准）
 分支名沿用系列文章里的约定：`chapter/01-value-selection`、`chapter/03-digital-human-demo` 等。
 提交信息用 `type(chNN): 描述`，一次提交只对应一掌。
 
+**每一掌完成时打一个标签**，标签打在 `main` 上该章的合并提交处：
+
+```bash
+git tag -a ch04 <merge-commit> -m "第 4 掌 鸿渐于陆 · 御模对话
+分支 chapter/04-chat-model ｜ PR #8
+交付：provider 进数据、模型目录、ChatOptionsFactory 收口、模型错误确定响应"
+
+git push origin ch04
+```
+
+标签命名 `ch01` … `ch18`（可排序、可对照章节号），标签信息里写清分支、PR 与本章交付，
+这样「某一掌当时交付了什么」在 tag 上就能看到，不用翻 PR 记录。
+
 ## 密钥规范
 
 - 真实密钥**只走环境变量**，或放在本地 `.env.local` / `application-local.yml`（均已在 `.gitignore` 中）。
@@ -86,13 +99,13 @@ Issue（本章要落的能力与验收标准）
 
 ## 模块与章节进度
 
-| 掌 | 主题 | 分支 | 状态 |
-|----|------|------|------|
-| 1 | 亢龙有悔 · 识势选型 | `chapter/01-value-selection` | 已完成：五层架构 + ChatClient 唯一出口骨架（待 PR 合入 main） |
-| 2 | 飞龙在天 · 筑基环境 | `chapter/02-baseline-env` | 已完成：mvnw + 版本对齐门禁 + 环境自检脚本（待 PR 合入 main） |
-| 3 | 见龙在田 · 数字人底座 | `chapter/03-digital-human-demo` | 已完成：三张表 + 注册登录 + 项目 CRUD + 运行页 + 文本问答（LiveKit 语音待接） |
-| 4 | 鸿渐于陆 · 御模对话 | `chapter/04-chat-model` | 待做 |
-| 5 | 潜龙勿用 · 藏忆流式 | `chapter/05-memory-streaming` | 待做 |
+| 掌 | 主题 | 分支 | 标签 | 状态 |
+|----|------|------|------|------|
+| 1 | 亢龙有悔 · 识势选型 | `chapter/01-value-selection` | `ch01` | 已合入 main：五层架构 + ChatClient 唯一出口骨架 |
+| 2 | 飞龙在天 · 筑基环境 | `chapter/02-baseline-env` | `ch02` | 已合入 main：mvnw + 版本对齐门禁 + 环境自检脚本 |
+| 3 | 见龙在田 · 数字人底座 | `chapter/03-digital-human-demo` | `ch03` | 已合入 main：三张表 + 注册登录 + 项目 CRUD + 运行页 |
+| 4 | 鸿渐于陆 · 御模对话 | `chapter/04-chat-model` | `ch04` | 已合入 main：provider 进数据 + 模型目录 + 确定的错误响应 |
+| 5 | 潜龙勿用 · 藏忆流式 | `chapter/05-memory-streaming` | — | 待做 |
 | 6 | 利涉大川 · 御器工具 | `chapter/06-tools` | 待做 |
 | 7 | 突如其来 · 通玄 MCP | `chapter/07-mcp` | 待做 |
 | 8 | 震惊百里 · 入藏 RAG | `chapter/08-rag` | 待做 |
