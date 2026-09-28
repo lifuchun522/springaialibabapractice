@@ -91,6 +91,24 @@ git push origin ch04
 标签命名 `ch01` … `ch18`（可排序、可对照章节号），标签信息里写清分支、PR 与本章交付，
 这样「某一掌当时交付了什么」在 tag 上就能看到，不用翻 PR 记录。
 
+## 文档三处同步
+
+同一份内容有三个落点，各有各的读者：
+
+| 落点 | 读者 | 内容 |
+|------|------|------|
+| `docs/chNN-*.md` | 跟着做的人 | 完整设计文档 + 验收记录（含原始输出） |
+| [Wiki](https://github.com/lifuchun522/springaialibabapractice/wiki) | 只想看结论的人 | 背景 + 每章一页（从 docs 生成，含链接与遗留问题） |
+| [Projects](https://github.com/lifuchun522/springaialibabapractice/projects) | 关心进度的人 | 每章一个条目，状态 Done / In Progress / Todo |
+
+Wiki 页面由脚本生成，**不要手改 wiki**（下次生成会覆盖）：
+
+```bash
+python scripts/build-wiki.py          # 生成到 D:\src\github\dh-wiki-staging
+# 再推到 wiki 仓库（仓库 wiki 必须先有首页，GitHub 才会建 <repo>.wiki.git）
+git -C <wiki-clone> add -A && git -C <wiki-clone> commit -m "docs(wiki): 同步章节文档" && git -C <wiki-clone> push
+```
+
 ## 密钥规范
 
 - 真实密钥**只走环境变量**，或放在本地 `.env.local` / `application-local.yml`（均已在 `.gitignore` 中）。
