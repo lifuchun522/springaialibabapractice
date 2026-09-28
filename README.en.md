@@ -198,7 +198,7 @@ from the tag itself.
 | 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | `ch09` | ✅ Event stream + hard model-call cap + tool-boundary retry + ledger |
 | 10 | 双龙取水 · Workflows | `chapter/10-workflow-agents` | `ch10` | ✅ Four flow-agent patterns + node-level tracing (timings, emissions, sequence) |
 | 11 | 鱼跃于渊 · Graph core | `chapter/11-graph-core` | `ch11` | ✅ State graph + explicit reduction strategies + interrupt + MySQL checkpoints (survives restart) |
-| 12 | 时乘六龙 · Multi-agent | `chapter/12-multi-agent` | — | ⬜ Planned |
+| 12 | 时乘六龙 · Multi-agent | `chapter/12-multi-agent` | `ch12` | ✅ Three roles, each with its own prompt/tools/memory + router + handoff + max-hops |
 | 13 | 密云不雨 · A2A | `chapter/13-a2a-nacos` | — | ⬜ Planned |
 | 14 | 损则有孚 · Source PR | `chapter/14-source-pr` | — | ⬜ Planned |
 | 15 | 龙战于野 · Evaluation | `chapter/15-eval-guard` | — | ⬜ Planned |
