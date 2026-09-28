@@ -40,8 +40,17 @@ release.properties
 .classpath
 .project
 
-# 本地环境与密钥，禁止入库
+# 本地配置与密钥，一律禁止入库（尤其是 API Key）
 .env
 .env.*
+!.env.example
 *.local.yml
-application-local.yml
+*.local.yaml
+application-local.*
+application-*-local.*
+application-secret.*
+secrets/
+*.pem
+*.key
+*.p12
+*.jks
