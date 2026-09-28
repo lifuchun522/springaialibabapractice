@@ -1,0 +1,12 @@
+# DeepSeek 验证通道：把模型通道从 DashScope 切到 OpenAI 兼容的 DeepSeek。
+# 用法：
+#   set DEEPSEEK_API_KEY=sk-xxx
+#   mvn -pl digital-human spring-boot:run -Dspring-boot.run.profiles=deepseek
+# 业务代码零改动，只换配置——这正是「模型调用出口唯一化」换来的。
+spring:
+  ai:
+    model:
+      chat: openai
+    # 关掉 DashScope 整套自动装配：本项目不准备用它，就不该在启动期要它的密钥
+    dashscope:
+      enabled: false
