@@ -96,6 +96,11 @@ Agent 版本一开始没落账，真实跑一遍立刻暴露：问「这个会�
 
 ## 五、本掌的取舍（写清楚代价）
 
+- **引入 Agent Framework 会带进一个和 Spring AI 不同步的 MCP SDK**。实测：`agent-framework`
+  → `graph-core` 依赖 `io.modelcontextprotocol.sdk:mcp:0.14.0`，而 Spring AI 1.1.2 的 MCP 客户端用的是
+  `0.17.0`；同一个 SDK 在进程里出现两份，`dependencyConvergence` 门禁直接拦下（本仓第三次被它拦住）。
+  处置：统一到与 Spring AI 对齐的 0.17.0，并用**真实远程工具调用**证明 graph-core 在 0.17.0 下没被拆坏。
+  顺带解释了第 7 掌那次 MCP 协议差异——两套栈的 SDK 版本本来就不同步。
 - **每个请求构建一次 Agent（含一次图编译）**。为什么还这么做：身份不能由模型填，
   而框架的 `toolContext` 是**构建期**参数，所以只能用「请求内作用域的工具对象」把身份闭包进去。
   长期做法是让框架支持按调用传身份，或按项目缓存 Agent 实例——这条留在验收记录的遗留问题里。

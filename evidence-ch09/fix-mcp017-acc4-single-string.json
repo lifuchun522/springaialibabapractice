@@ -1,0 +1,1 @@
+{"reply":"你好，我是小九，这个「Agent 真实验收」项目里的数字人助手，有什么想问的尽管说。","traceId":"0facfa8f283a","modelCalls":2,"events":["agent.start","model#1","tool:project_info","model#2","agent.end"]}

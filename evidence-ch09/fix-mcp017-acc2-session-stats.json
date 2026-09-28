@@ -1,0 +1,1 @@
+{"reply":"这个会话目前一共 3 条消息，其中你提了 2 次问题。","traceId":"1fc9236a73be","modelCalls":2,"events":["agent.start","model#1","tool:session_stats","tool:session_stats","model#2","agent.end"]}

@@ -84,6 +84,35 @@
                 <artifactId>swagger-annotations-jakarta</artifactId>
                 <version>2.2.38</version>
             </dependency>
+
+            <!--
+              第 9 掌引入 Agent Framework 后，同一把门禁第三次拦住东西，而且一次拦两个：
+                spring-ai-alibaba-graph-core → io.modelcontextprotocol.sdk:mcp 0.14.0
+                Spring AI 1.1.2 的 mcp-client     → io.modelcontextprotocol.sdk:mcp 0.17.0
+                spring-ai-alibaba-graph-core → org.jetbrains:annotations 13.0
+                flexmark（经 agent-framework）  → org.jetbrains:annotations 24.0.1
+
+              第一条值得单独记一笔：**Sprig AI 与 Spring AI Alibaba 的 MCP SDK 版本本来就不同步**
+              （0.17.0 vs 0.14.0）。第 7 掌那次「文章说工具会静默为空、我们实测直接抛
+              McpTransportException」的协议差异，根因就在这类版本错位上。
+
+              处置仍是统一到与 Spring AI 对齐的 0.17.0（不是 exclude，也不是关掉门禁）：
+              MCP 客户端是 Spring AI 的那一套，跑的是 0.17.0；把 graph-core 也拉到同一版本，
+              避免同一个 SDK 在进程里出现两份。**代价必须用真实调用验证**——
+              graph-core 是按 0.14.0 编译的，所以第 9 掌的验收里保留了「Agent 真实调用远程 MCP 工具」
+              这一条（见 docs/ch09-验收记录.md），就是为了证明这个统一没有把运行时拆坏。
+            -->
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp</artifactId>
+                <version>0.17.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jetbrains</groupId>
+                <artifactId>annotations</artifactId>
+                <version>24.0.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
