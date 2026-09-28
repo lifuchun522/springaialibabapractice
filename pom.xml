@@ -70,5 +70,38 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <!-- 环境与版本对齐门禁：基线不齐，后面每一掌都在还债 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>enforce-baseline</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[21,22)</version>
+                                    <message>本项目基线是 JDK 21 LTS；JDK 版本不一致时先切环境，不要改 pom 降级。</message>
+                                </requireJavaVersion>
+                                <requireMavenVersion>
+                                    <version>[3.9,)</version>
+                                    <message>请用仓库自带的 ./mvnw（Maven 3.9+），不要用机器上随便一个 Maven。</message>
+                                </requireMavenVersion>
+                                <!-- 同一个构件在依赖树里出现两个版本 = 下一个 NoSuchMethodError -->
+                                <dependencyConvergence/>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 </project>

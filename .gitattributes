@@ -1,0 +1,10 @@
+# 统一换行符：Maven Wrapper 脚本在 Linux/macOS 上必须是 LF，否则 ./mvnw 直接报 bad interpreter
+* text=auto eol=lf
+mvnw text eol=lf
+mvnw.cmd text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
+*.jpg binary
