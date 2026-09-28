@@ -46,6 +46,8 @@ public class DigitalHumanChatService {
     private final ChatLedgerService ledger;
     private final ConversationGuard conversationGuard;
     private final ToolRegistry toolRegistry;
+    /** 第 17 掌：观测入口，模型/工具/RAG/图/远程调用都从它进调用树与指标。 */
+    private final com.example.digitalhuman.observability.ObservedOperation observed;
 
     public DigitalHumanChatService(ChatClient chatClient,
                                    AgentConfigRepository agentConfigs,
@@ -53,7 +55,8 @@ public class DigitalHumanChatService {
                                    ChatOptionsFactory chatOptionsFactory,
                                    ChatLedgerService ledger,
                                    ConversationGuard conversationGuard,
-                                   ToolRegistry toolRegistry) {
+                                   ToolRegistry toolRegistry,
+                                   com.example.digitalhuman.observability.ObservedOperation observed) {
         this.chatClient = chatClient;
         this.agentConfigs = agentConfigs;
         this.chatProperties = chatProperties;
@@ -61,6 +64,7 @@ public class DigitalHumanChatService {
         this.ledger = ledger;
         this.conversationGuard = conversationGuard;
         this.toolRegistry = toolRegistry;
+        this.observed = observed;
     }
 
     /** 阻塞式一问一答（运行页的 GET 接口、Bridge 端点走这里）。 */
@@ -73,7 +77,11 @@ public class DigitalHumanChatService {
         String provider = config == null ? DEFAULT_PROVIDER : config.getProvider();
         String model = config == null ? DEFAULT_PROVIDER : config.getModel();
         try {
-            String content = invoke(spec(config, request), request.text(), provider, model);
+            // 第 17 掌：模型调用是这条链路的第一个「必经之路」。观测名与 layer 固定，
+            // 指标按 layer 聚合，诊断面按 traceId 还原——同一份埋点喂两个下游。
+            String content = observed.observe("genai.chat", "model",
+                    Map.of("provider", provider, "model", model),
+                    () -> invoke(spec(config, request), request.text(), provider, model));
             ledger.append(ledgerProjectId(request), conversationId, request.userId(),
                     ChatMessage.Role.ASSISTANT, content, ChatMessage.Status.COMPLETED);
             return content;
@@ -111,7 +119,13 @@ public class DigitalHumanChatService {
         // 而对前端来说，「没有回答」和「回答是空的」是完全不同的两件事：
         // 前者要重试提示，后者会静默地什么也不显示。
         StringBuilder received = new StringBuilder();
-        return spec(config, request).user(request.text())
+        String provider = config == null ? DEFAULT_PROVIDER : config.getProvider();
+        String model = config == null ? DEFAULT_PROVIDER : config.getModel();
+        // 第 17 掌：流式路径同样要进调用树与指标。第一版只埋了阻塞式，
+        // 结果「流式请求在诊断面上是空的」——而运行页走的正是流式（实测发现）。
+        return observed.<Flux<String>>observe("genai.chat.stream", "model",
+                        Map.of("provider", provider, "model", model),
+                        () -> spec(config, request).user(request.text())
                 .stream()
                 .content()
                 .doOnNext(received::append)
@@ -127,7 +141,7 @@ public class DigitalHumanChatService {
                 .onErrorMap(ex -> toModelInvocationException(ex))
                 .doOnError(ex -> ledger.append(ledgerProjectId(request), conversationId, request.userId(),
                         ChatMessage.Role.ASSISTANT, errorSummary(ex), ChatMessage.Status.FAILED))
-                .doFinally(signal -> conversationGuard.release(conversationId.value()));
+                .doFinally(signal -> conversationGuard.release(conversationId.value())));
     }
 
     private ChatClient.ChatClientRequestSpec spec(AgentConfig config, ConversationRequest request) {

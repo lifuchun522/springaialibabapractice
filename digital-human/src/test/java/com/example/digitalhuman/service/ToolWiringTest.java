@@ -49,7 +49,7 @@ class ToolWiringTest {
         return new DigitalHumanChatService(ChatClient.builder(chatModel).build(),
                 mock(AgentConfigRepository.class), new DigitalHumanChatProperties("默认人设"),
                 new com.example.digitalhuman.ai.ChatOptionsFactory(), mock(ChatLedgerService.class),
-                new ConversationGuard(), registry);
+                new ConversationGuard(), registry, com.example.digitalhuman.observability.TestObservability.noop());
     }
 
     private static ChatModel chatModel() {

@@ -42,7 +42,7 @@ class DigitalHumanChatServiceTest {
         return new DigitalHumanChatService(ChatClient.builder(chatModel).build(), configs,
                 new DigitalHumanChatProperties("你是一个数字人助手，回答简短、口语化。"),
                 new com.example.digitalhuman.ai.ChatOptionsFactory(),
-                mock(ChatLedgerService.class), new ConversationGuard(), tools);
+                mock(ChatLedgerService.class), new ConversationGuard(), tools, com.example.digitalhuman.observability.TestObservability.noop());
     }
 
     @Test
@@ -84,7 +84,7 @@ class DigitalHumanChatServiceTest {
         DigitalHumanChatService service = new DigitalHumanChatService(
                 ChatClient.builder(chatModel).build(), mock(AgentConfigRepository.class),
                 new DigitalHumanChatProperties("默认人设"), new com.example.digitalhuman.ai.ChatOptionsFactory(),
-                ledger, new ConversationGuard(), tools);
+                ledger, new ConversationGuard(), tools, com.example.digitalhuman.observability.TestObservability.noop());
 
         service.answer(new ConversationRequest(null, "s2", 7L, "深圳有什么好玩的"));
 

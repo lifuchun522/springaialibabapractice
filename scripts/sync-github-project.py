@@ -73,7 +73,8 @@ CHAPTERS = [
      "依赖方向门禁（ArchUnit 6 条，第一次跑就抓到 ToolController 直连 repository）+ 启动期部署契约"
      "（缺密钥即启动失败并点名环境变量）+ 健康分组 liveness/readiness + SSE 心跳与有界异步执行器"
      "+ 生产边界（/internal/llm/v1 在 prod 下 404）+ 可执行接口契约；离线用例 133→157"),
-    (17, "羝羊触藩", "观星治理", "chapter/17-observability-admin", None, None, "Backlog", "待做"),
+    (17, "羝羊触藩", "观星治理", "chapter/17-observability-admin", "ch17", 0, "Done",
+     "身份四元组贯穿（traceId/projectId/sessionId/threadId）+ 跨线程池与跨进程传播 + http/model/tool/rag 四层调用树 + 九类失败分类 + 诊断接口与 Prometheus 指标；离线用例 157→182"),
     (18, "神龙摆尾", "登云 K8s", "chapter/18-k8s-production", None, None, "Backlog", "待做"),
 ]
 

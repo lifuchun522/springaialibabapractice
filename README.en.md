@@ -296,6 +296,10 @@ snippets do not hold on the version you installed. So the repo writes the deviat
 | 16 | Layering means moving files into packages | Writing the dependency direction as ArchUnit rules **caught a real violation on the very first run**: `ToolController` injected a repository directly (authorization, ownership and querying all inside the HTTP layer). The same run showed **my own rule was too wide** (`..web..` also matched Spring's `org.springframework.web..`, 23 false positives) | Added `ToolAuditService` so the use case lives in the service layer; narrowed the rule to `com.example.digitalhuman.web..` — a gate is code too, and both its width and its narrowness need calibrating against a real violation |
 | 16 | If it runs locally, the service is fine | A real streaming request printed a framework warning: `default Spring MVC SimpleAsyncTaskExecutor … not suitable for production use under load` (a new thread per request, no bounds, no queue). **Every functional test passed**; the delivery criterion did not | Configured `WebAsyncConfig`: bounded pool (4/32/200) + explicit 5-minute timeout + graceful shutdown; the warning no longer appears on the same real path after the fix |
 | 16 | Externalizing config is enough | compose had `${APP_DEEPSEEK_API_KEY}` — unset means empty string, so the gap travelled into the container and surfaced as a 401 on the first request (exactly the article's chain A) | Required items became `${VAR:?message}`: `docker compose config` now refuses to render and prints which variable is missing and where to declare it; the probe also moved from `/actuator/health` to `/actuator/health/readiness` |
+| 17 | A traceId means the chain is joined | One request carried **two different ids**: the response header and call tree used our own `a6d63cf3…`, while the log's `traceId` was the framework's `6d5f033b…` — Micrometer's correlation decorator **writes the same MDC key**, so last writer wins | The filter now **prefers the framework's current span traceId** (as the article's V1 does), giving identity a single source; afterwards header == log == audit table == call tree |
+| 17 | Tool audit and logs naturally line up | `ConversationRequest` minted its own 12-char traceId while the HTTP side used a 32-char one: response header `9a3abf6d…` versus `tool_call_audit.trace_id = c7c2b3418b6c` — **the two tables can never be joined**, and the tool audit is the only truth about what the model actually called | traceId is inherited from the request context, generated only when there is none; pinned by an assertion, and the audit row now matches the response header |
+| 17 | Adding instrumentation produces data | Failure-category metrics were **silently dropped by Prometheus**: all meters sharing a name must share the same tag key set, so adding `failure.type` only on failures invalidates that whole batch — one WARN line, business completely fine | `failure.type=none` is registered when the meter is created and only its value changes; afterwards both `failure_type="INPUT_INVALID"` and `"none"` are queryable |
+| 17 | A failed request surely leaves a trace | Early failures (missing project, invalid input) throw **before** any business instrumentation, so the diagnostics view was an empty tree; after adding the HTTP layer its category was still empty — because `@ExceptionHandler` converts the exception into a response inside the servlet, invisible to filters | The filter wraps the whole request in an HTTP-layer span and classifies **by response status** (at HTTP level the status code is the fact); an early failure now leaves a tree carrying `INPUT_INVALID` |
 
 
 
@@ -331,21 +335,86 @@ and an acceptance record quoting raw output:
 
 ## 10. Baseline: documented is not enough, it must fail `validate`
 
+**Three lanes, not one.** The admin lane only writes configuration; the conversation lane is the only
+one that touches models and audio; the registry lane only answers "who can be found".
+They are drawn separately because the first question this diagram must answer is
+*"which lane does a new capability belong to?"* — a flat list of components cannot answer it.
+
 ```mermaid
-flowchart LR
-    U["Browser"] -->|"HTTP + SSE"| API
+flowchart TB
+    subgraph CLIENT["Clients"]
+        AUI["Operator console<br/>sign-in · project CRUD · config · publish"]
+        RUI["Public runtime entry<br/>guest name · subtitles · audio · tags · avatar"]
+    end
+
     subgraph APP["digital-human: Spring Boot 3.5.10"]
-        API["REST API<br/>auth / projects / chat / rag / agent"]
+        API["REST + SSE<br/>auth / projects / chat / rag / agent"]
+        CFG["Config catalog &amp; publish<br/>voice · avatar · stance · KB · MCP · A2A"]
+        VOICE["Voice adapter<br/>synthesis · recognition · temp credentials"]
         AGENT["ReactAgent brain<br/>Hooks for boundaries + interceptors for tracing"]
         TOOLS["Tool layer<br/>read-only · write+token · audit/timeout/retry"]
         RAG["Project knowledge base<br/>metadata-contract isolation"]
+        DISC["Registry discovery<br/>A2A instances + MCP service catalog"]
+        SNAP[("Config snapshot<br/>published version immutable")]
     end
-    AGENT -->|"ChatClient"| LLM["DeepSeek<br/>OpenAI-compatible"]
+
+    subgraph EXT["External capabilities"]
+        LLM["DeepSeek<br/>OpenAI-compatible"]
+        TTSX["Alibaba Cloud TTS<br/>external dependency"]
+        ASRX["Alibaba Cloud ASR<br/>external dependency"]
+    end
+
+    subgraph RTC["Realtime lane · reserved by ch19, not deployed"]
+        LKS["livekit-server<br/>WebRTC signaling + media relay"]
+        LKA["livekit-agent<br/>lip-sync / expression inference"]
+    end
+
+    subgraph REG["Registry lane"]
+        NACOS["Nacos<br/>official image + shared MySQL"]
+        NACOSDB[("nacos_config<br/>same MySQL instance")]
+    end
+
+    subgraph PEERS["Peer services"]
+        MCP["digital-human-mcp<br/>showroom booking: own process + own DB"]
+        KA["knowledge-agent<br/>A2A capability card"]
+    end
+
+    DB[("MySQL 8<br/>business DB · Flyway V1–V6")]
+
+    AUI -->|"HTTP"| API
+    API --> CFG
+    CFG --> SNAP
+    RUI -->|"HTTP + SSE"| API
+    API --> AGENT
+    AGENT -->|"ChatClient"| LLM
     AGENT --> TOOLS
     AGENT --> RAG
-    TOOLS -->|"MCP STREAMABLE /mcp"| MCP["digital-human-mcp<br/>showroom booking: own process + own DB"]
-    APP --> DB[("MySQL 8<br/>Flyway V1–V5")]
+    API -->|"synthesis / recognition"| VOICE
+    VOICE --> TTSX
+    VOICE --> ASRX
+    TOOLS -->|"MCP STREAMABLE /mcp"| MCP
+    DISC -->|"capability card + task"| KA
+    DISC --> NACOS
+    MCP -.->|"catalog registration"| NACOS
+    KA -.->|"instance registration"| NACOS
+    NACOS --> NACOSDB
+    APP --> DB
+    MCP --> DB
+    RUI -.->|"reserved: audio channel"| LKS
+    LKS -.->|"reserved: worker"| LKA
 ```
+
+This diagram answers **"which lane does a new capability belong to?"** — solid edges are lanes this
+repo actually runs; dashed edges are ch19's reserved slots. The admin lane only writes configuration
+and never reaches the network; only the conversation lane touches models and audio; the registry lane
+only answers "who can be found" and carries neither tool schemas nor business config as truth.
+
+> **Dashed = reserved, not "already working".** `livekit-server` / `livekit-agent` are drawn but not
+> deployed by ch19 (they need algorithm images and a GPU), so real lip-sync and expression inference is
+> still outstanding debt. TTS / ASR are external dependencies: this repo ships only a vendor-neutral
+> adapter. `nacos` carries registration and discovery only — **never tool schemas or business config
+> as a second source of truth.** See section 8 of the
+> [ch19 document](docs/ch19-数字人功能升级.md) for the per-item accounting.
 
 | Item | Value |
 |------|-------|
@@ -401,7 +470,7 @@ Startup logs should show `MCP 远程工具已发现 1 个：showroom_query_avail
 | 14 | 损则有孚 · Source PR | `chapter/14-source-pr` | `ch14` | ✅ Behaviour pinned to 1.1.2.2 line numbers + minimal reproduction + upstream issue draft ([article](https://cloud.tencent.com/developer/article/2752091)) |
 | 15 | 龙战于野 · Evaluation | `chapter/15-eval-guard` | `ch15` | ✅ Five test layers (L1 unit / L2 MockWebServer at the HTTP boundary / L3 Testcontainers / L4 snapshot replay / L5 live evaluation) + six regression suites, 24 cases + judge calibration ([article](https://cloud.tencent.com/developer/article/2752089)) |
 | 16 | 履霜冰至 · Service | `chapter/16-spring-service` | `ch16` | ✅ Dependency-direction gate (6 ArchUnit rules) + startup deployment contract + health groups (liveness / readiness) + SSE heartbeat with a bounded async executor + production boundary (`/internal/llm/v1` is 404 under prod) + executable API contract ([article](https://cloud.tencent.com/developer/article/2752087)) |
-| 17 | 羝羊触藩 · Observability | `chapter/17-observability-admin` | — | ⬜ Planned ([article](https://cloud.tencent.com/developer/article/2752086) and video already published) |
+| 17 | 羝羊触藩 · Observability | `chapter/17-observability-admin` | `ch17` | ✅ Identity quad end to end (traceId/projectId/sessionId/threadId) + cross-thread and cross-process propagation + a four-layer call tree (http/model/tool/rag) + nine failure categories + diagnostics endpoint and Prometheus metrics ([article](https://cloud.tencent.com/developer/article/2752086)) |
 | 18 | 神龙摆尾 · K8s | `chapter/18-k8s-production` | — | ⬜ Planned ([article](https://cloud.tencent.com/developer/article/2752084) and video already published) |
 
 ### Delivery flow: issue → branch → PR → main → tag

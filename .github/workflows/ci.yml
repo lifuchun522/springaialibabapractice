@@ -50,6 +50,13 @@ jobs:
           echo "使用：$($MVN -v | head -1)"
           $MVN -B -ntp clean verify
 
+      - name: 架构图一致性门禁
+        # 起因是一次真实偏差：README 的架构图里少画了 5 个组件
+        # （livekit-agent / livekit-server / tts / asr / nacos），而当时没有任何检查会发现它——
+        # 图是散文，散文不会失败。这道门禁只依赖 Python 标准库，
+        # 检查：必需组件是否在图上、中英两份图是否漂移、预留组件是否同时记在非交付清单里。
+        run: python3 scripts/check-diagrams.py
+
       - name: 上传测试报告
         if: always()
         uses: actions/upload-artifact@v4
