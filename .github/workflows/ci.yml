@@ -27,8 +27,28 @@ jobs:
           java-version: '21'
           cache: maven
 
+      # mvnw 的 Maven 发行版本身要联网下载，实测在 runner 上偶发失败
+      # （wget: Failed to fetch apache-maven-3.9.11-bin.zip）——这不是代码问题，却是红灯。
+      # 缓存下来，顺便把「下载失败」与「测试失败」两类红灯分开。
+      - name: 缓存 Maven Wrapper 的 Maven 发行版
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/wrapper/dists
+          key: maven-wrapper-${{ runner.os }}-3.9.11
+
       - name: 编译与测试（两个模块）
-        run: ./mvnw -B -ntp clean verify
+        # 优先用仓库自带的 mvnw（Maven 版本钉在仓库里）；
+        # 只有 wrapper 自己下载失败时才退回 runner 预装的 Maven——
+        # 退回不代表放松基线：enforcer 的 requireMavenVersion [3.9,) 照样会拦住低版本。
+        run: |
+          if ./mvnw -v >/dev/null 2>&1; then
+            MVN=./mvnw
+          else
+            echo "::warning::mvnw 无法引导 Maven（多为下载失败），本次退回 runner 预装的 Maven（仍受 enforcer 版本下限约束）"
+            MVN=mvn
+          fi
+          echo "使用：$($MVN -v | head -1)"
+          $MVN -B -ntp clean verify
 
       - name: 上传测试报告
         if: always()
