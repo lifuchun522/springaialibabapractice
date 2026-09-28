@@ -99,15 +99,22 @@ git push origin ch04
 |------|------|------|
 | `docs/chNN-*.md` | 跟着做的人 | 完整设计文档 + 验收记录（含原始输出） |
 | [Wiki](https://github.com/lifuchun522/springaialibabapractice/wiki) | 只想看结论的人 | 背景 + 每章一页（从 docs 生成，含链接与遗留问题） |
-| [Projects](https://github.com/lifuchun522/springaialibabapractice/projects) | 关心进度的人 | 每章一个条目，状态 Done / In Progress / Todo |
+| [Projects](https://github.com/users/lifuchun522/projects/1) | 关心进度的人 | 每章一个条目，状态 Done / In progress / Backlog |
 
-Wiki 页面由脚本生成，**不要手改 wiki**（下次生成会覆盖）：
+两处都由脚本生成，**不要手改**（下次生成会覆盖）：
 
 ```bash
-python scripts/build-wiki.py          # 生成到 D:\src\github\dh-wiki-staging
-# 再推到 wiki 仓库（仓库 wiki 必须先有首页，GitHub 才会建 <repo>.wiki.git）
-git -C <wiki-clone> add -A && git -C <wiki-clone> commit -m "docs(wiki): 同步章节文档" && git -C <wiki-clone> push
+# Wiki：生成到 D:\src\github\dh-wiki-staging，再推到 wiki 仓库
+# （GitHub 的规则：仓库 wiki 必须先有一个首页，<repo>.wiki.git 才会存在）
+python scripts/build-wiki.py
+
+# Projects：章节数据写在脚本里的 CHAPTERS（分支/PR/tag/交付/状态），重复执行只更新不重复建
+python scripts/sync-github-project.py --dry-run   # 先看计划
+python scripts/sync-github-project.py             # 实际同步
 ```
+
+Projects 需要 `gh` 带 `project` 权限（`gh auth refresh -s project`）；
+脚本调用 `gh` 时**不走 shell** —— Windows 上 `shell=True` 会把中文正文里的换行与引号拼坏（本轮踩过）。
 
 ## 密钥规范
 
