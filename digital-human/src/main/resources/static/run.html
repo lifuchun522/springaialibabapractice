@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>数字人运行页</title>
+    <style>
+        :root { --theme: #2F6BFF; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #f5f7fb center/cover no-repeat; color: #1f2430;
+            display: flex; align-items: center; justify-content: center; padding: 24px;
+        }
+        .card {
+            width: 100%; max-width: 720px; background: rgba(255, 255, 255, .96); border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(20, 30, 60, .12); overflow: hidden; display: flex; flex-direction: column;
+            max-height: 86vh;
+        }
+        header { padding: 20px 24px; border-bottom: 1px solid #eef1f6; display: flex; align-items: center; gap: 12px; }
+        header .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--theme); flex: none; }
+        header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+        header .sub { margin: 2px 0 0; font-size: 12px; color: #8a93a6; }
+        #messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+        .msg { max-width: 78%; padding: 10px 14px; border-radius: 12px; line-height: 1.6; white-space: pre-wrap; font-size: 14px; }
+        .msg.user { align-self: flex-end; background: var(--theme); color: #fff; border-bottom-right-radius: 4px; }
+        .msg.bot { align-self: flex-start; background: #f1f4fa; border-bottom-left-radius: 4px; }
+        .msg.sys { align-self: center; background: transparent; color: #8a93a6; font-size: 12px; }
+        footer { border-top: 1px solid #eef1f6; padding: 14px 16px; display: flex; gap: 10px; }
+        footer input { flex: 1; border: 1px solid #dfe4ee; border-radius: 10px; padding: 11px 14px; font-size: 14px; outline: none; }
+        footer input:focus { border-color: var(--theme); }
+        footer button { border: 0; border-radius: 10px; padding: 11px 20px; font-size: 14px; cursor: pointer; background: var(--theme); color: #fff; }
+        footer button.ghost { background: #eef1f6; color: #4b5468; }
+        footer button:disabled { opacity: .55; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <header>
+        <div class="avatar" id="avatar"></div>
+        <div>
+            <h1 id="title">加载中…</h1>
+            <p class="sub" id="subtitle">数字人运行页</p>
+        </div>
+    </header>
+    <div id="messages"></div>
+    <footer>
+        <input id="question" placeholder="说点什么…" autocomplete="off">
+        <button id="send">发送</button>
+        <button id="closing" class="ghost" title="显示结束语">结束语</button>
+    </footer>
+</div>
+
+<script>
+    // 项目号由服务端在返回页面时替换，页面本身是静态的
+    const PROJECT_ID = Number('__PROJECT_ID__');
+
+    const messages = document.getElementById('messages');
+
+    function push(text, kind) {
+        const div = document.createElement('div');
+        div.className = 'msg ' + kind;
+        div.textContent = text;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        return div;
+    }
+
+    async function loadRuntime() {
+        const resp = await fetch('/api/projects/' + PROJECT_ID + '/runtime');
+        if (!resp.ok) {
+            push('运行配置加载失败（HTTP ' + resp.status + '），请确认项目 ' + PROJECT_ID + ' 存在。', 'sys');
+            return null;
+        }
+        const data = await resp.json();
+        const project = data.project;
+        document.title = project.title + ' · 数字人运行页';
+        document.getElementById('title').textContent = project.title;
+        document.getElementById('subtitle').textContent = project.name + ' · 模型 ' + data.agent.model;
+        document.documentElement.style.setProperty('--theme', project.themeColor || '#2F6BFF');
+        if (project.backgroundUrl) {
+            document.body.style.backgroundImage = 'url("' + project.backgroundUrl + '")';
+        }
+        if (project.openingLine) {
+            push(project.openingLine, 'bot');
+        }
+        return project;
+    }
+
+    async function ask() {
+        const input = document.getElementById('question');
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+        push(text, 'user');
+        const button = document.getElementById('send');
+        button.disabled = true;
+        const pending = push('…', 'bot');
+        try {
+            const resp = await fetch('/api/chat?projectId=' + PROJECT_ID + '&q=' + encodeURIComponent(text));
+            pending.textContent = resp.ok ? await resp.text() : '调用失败（HTTP ' + resp.status + '）：' + await resp.text();
+        } catch (err) {
+            pending.textContent = '调用异常：' + err;
+        } finally {
+            button.disabled = false;
+            input.focus();
+        }
+    }
+
+    document.getElementById('send').addEventListener('click', ask);
+    document.getElementById('question').addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+    document.getElementById('closing').addEventListener('click', async () => {
+        const data = await (await fetch('/api/projects/' + PROJECT_ID + '/runtime')).json();
+        if (data.project.closingLine) push(data.project.closingLine, 'bot');
+    });
+
+    loadRuntime().then(() => document.getElementById('question').focus());
+</script>
+</body>
+</html>
