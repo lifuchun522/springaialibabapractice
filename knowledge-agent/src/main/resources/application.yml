@@ -1,0 +1,42 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: knowledge-agent
+  datasource:
+    url: ${KNOWLEDGE_DB_URL:jdbc:mysql://127.0.0.1:3306/knowledge_agent?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${KNOWLEDGE_DB_USER:root}
+    password: ${KNOWLEDGE_DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  ai:
+    model:
+      chat: openai
+    openai:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      chat:
+        options:
+          model: ${DEEPSEEK_MODEL:deepseek-flash}
+
+# A2A：能力声明里的地址、实例标识，以及注册中心
+a2a:
+  # 多实例验证时用 -Da2a.instance-id=ka-1 / ka-2 区分
+  instance-id: ${A2A_INSTANCE_ID:ka-1}
+  register:
+    # 未开 Nacos 时服务照常启动：发现交给调用方的静态表（这本身就说明了「注册中心是可选中间层」）
+    enabled: ${A2A_NACOS_ENABLED:false}
+    server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+    service-name: knowledge-agent
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

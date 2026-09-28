@@ -248,7 +248,7 @@ export DIGITAL_HUMAN_DB_PASSWORD=root
 
 ```mermaid
 flowchart LR
-    U["运行页 / 客户端"] -->|"HTTP + SSE"| API
+    U["浏览器"] -->|"HTTP + SSE"| API
     subgraph APP["digital-human：Spring Boot 3.5.10"]
         API["REST API<br/>auth / projects / chat / rag / agent"]
         AGENT["ReactAgent 主脑<br/>Hooks 边界 + 拦截器事件流"]

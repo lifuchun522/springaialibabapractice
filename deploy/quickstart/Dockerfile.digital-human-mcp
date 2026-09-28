@@ -8,12 +8,9 @@ FROM ${BUILD_IMAGE} AS build
 
 WORKDIR /src
 
-# 父 POM 与每个 module 的 POM 都要在（Maven 会读所有 module 的 pom.xml，
-# 少一个就报 Child module ... does not exist），理由见 Dockerfile.digital-human。
 COPY pom.xml ./
 COPY digital-human/pom.xml digital-human/
 COPY digital-human-mcp/pom.xml digital-human-mcp/
-COPY knowledge-agent/pom.xml knowledge-agent/
 RUN mvn -B -ntp -pl digital-human-mcp -am dependency:go-offline
 
 COPY digital-human-mcp/src digital-human-mcp/src

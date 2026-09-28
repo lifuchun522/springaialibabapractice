@@ -1,0 +1,12 @@
+﻿spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/extension/interceptor/LargeResultEvictionInterceptor.java:92
+      public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
+spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/interceptor/InterceptorChain.java:90
+      current = request -> interceptor.interceptToolCall(request, nextHandler);
+spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/interceptor/ToolInterceptor.java:37
+      public abstract ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler);
+spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/interceptor/toolemulator/ToolEmulatorInterceptor.java:88
+      public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
+spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/interceptor/toolerror/ToolErrorInterceptor.java:26
+      public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
+spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/interceptor/toolretry/ToolRetryInterceptor.java:75
+      public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {

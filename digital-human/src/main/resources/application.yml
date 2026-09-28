@@ -113,6 +113,24 @@ digital-human:
   multi-agent:
     # 一跳最多换几个角色：上界由代码握着，不指望模型自己停
     max-hops: 3
+  # 跨服务协作（第 13 掌）：只依赖协议，不依赖对端任何类
+  a2a:
+    # 静态实例表（逗号分隔）。写法说明：用 @Value 绑 List 时 YAML 列表不会自动展开，
+    # 只会得到一个元素——实测多实例验证时就是这个原因导致「总是只打第一个实例」。
+    # 多实例/扩缩容场景应改走下面的 Nacos 发现。
+    instances: http://127.0.0.1:8082,http://127.0.0.1:8083
+    nacos:
+      # 打开方式：把 enabled 改成 true 并填好 server-addr。
+      # 本环境没有起 Nacos，所以用上面的静态实例表验证「多实例分散调用」；
+      # 两条路径走同一个 AgentRegistry 接口，主服务的调用逻辑不变。
+      enabled: false
+      server-addr: 127.0.0.1:8848
+      service-name: knowledge-agent
+    # 单次跨服务调用超时；超时是「明确失败」，不是静默返回兜底答案
+    timeout-ms: 15000
+    # 只对「对方可能没收到」的失败重试；4xx 不重试
+    max-attempts: 2
+    protocol-version: '1.0'
   # 模型目录：有哪些 provider、每个 provider 下有哪些模型，全部是配置。
   # agent_config.provider / model 必须命中这里，否则改配置时直接 400、启动期也不会带病运行。
   models:

@@ -98,6 +98,16 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!--
+          第 13 掌：服务发现。注册中心是**可选中间层**——
+          本地单实例开发用配置里的静态实例表，多实例/扩缩容时才需要 Nacos；
+          Nacos 不可用时明确告警并退回静态表，主服务不会因为注册中心挂掉而不可用。
+        -->
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

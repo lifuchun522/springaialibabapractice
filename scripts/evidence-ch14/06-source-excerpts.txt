@@ -1,0 +1,5 @@
+== v1.1.2.2 ToolRetryInterceptor 关键行（行号来自源码 jar，不是 main）==
+
+== v1.1.2.2 ToolErrorInterceptor 全文关键行 ==
+
+== v1.1.2.2 InterceptorChain 组装顺序（先声明在外层）==

@@ -1,0 +1,9 @@
+== 跨服务贯穿标识对账（traceId=ec051ecc9307）==
+主服务日志：
+2026-09-28T18:15:23.128+08:00  INFO 8044 --- [digital-human] [nio-8080-exec-3] com.example.digitalhuman.a2a.A2AClient   : [a2a] trace=ec051ecc9307 instance=8083 task=task-1-ec051ecc9307 已创建
+2026-09-28T18:15:25.344+08:00  INFO 8044 --- [digital-human] [nio-8080-exec-3] com.example.digitalhuman.a2a.A2AClient   : [a2a] trace=ec051ecc9307 instance=8083 task=task-1-ec051ecc9307 deltas=1 elapsedMs=2274
+
+知识 Agent(ka-2, 8083) 日志：
+2026-09-28T18:15:23.091+08:00  INFO 41660 --- [knowledge-agent] [nio-8083-exec-7] c.e.k.web.A2AAgentController             : [a2a] trace=ec051ecc9307 task=task-1-ec051ecc9307 instance=ka-2 收到任务：展厅的开放时间是什么？
+2026-09-28T18:15:23.474+08:00  INFO 41660 --- [knowledge-agent] [nio-8083-exec-8] c.e.k.web.A2AAgentController             : [a2a] trace=ec051ecc9307 task=task-1-ec051ecc9307 instance=ka-2 hits=2
+2026-09-28T18:15:25.193+08:00  INFO 41660 --- [knowledge-agent] [nio-8083-exec-8] c.e.k.web.A2AAgentController             : [a2a] trace=ec051ecc9307 task=task-1-ec051ecc9307 instance=ka-2 completed answerLength=27

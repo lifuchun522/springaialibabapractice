@@ -1,0 +1,15 @@
+# 测试 profile：H2 内存库 + Flyway 关闭（表由 Hibernate 建），保证离线确定性
+spring:
+  datasource:
+    url: jdbc:h2:mem:knowledge_agent;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+
+a2a:
+  instance-id: ka-test

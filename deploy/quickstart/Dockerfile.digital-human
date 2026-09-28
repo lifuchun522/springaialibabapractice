@@ -7,9 +7,9 @@
 # 参数与 digital-human/Dockerfile 保持一致：JDK 21（enforcer 要求 [21,22)），
 # 非 root 运行，时区与字符集跟业务一致。
 #
-# 两个 ARG 都必须声明在**第一个 FROM 之前**：只有第一个 FROM 之前的 ARG 才是全局构建参数；
-# 第一个 FROM 之后声明的 ARG 只属于它所在的那一段，第二个 FROM 用不到
-# （实测报错：base name (${RUNTIME_IMAGE}) should not be blank）。
+# 两个 FROM 各用一个 ARG，且**都声明在第一个 FROM 之前**：
+# 只有第一个 FROM 之前的 ARG 才是全局构建参数，第一个 FROM 之后声明的同名 ARG
+# 只属于它所在的那一段，第二个 FROM 用不到（实测报错：base name (${RUNTIME_IMAGE}) should not be blank）。
 ARG BUILD_IMAGE=maven:3.9-eclipse-temurin-21
 ARG RUNTIME_IMAGE=eclipse-temurin:21-jre-alpine
 
@@ -17,14 +17,11 @@ FROM ${BUILD_IMAGE} AS build
 
 WORKDIR /src
 
-# 先把父 POM 与**每个** module 的 POM 都复制进来：
-# 父 POM 里声明了哪些 module，Maven 就会去读哪些 module 的 pom.xml，少一个就直接失败，
-# 所以这里不按「我只需要 digital-human」去精简——实测踩过这个坑。
-# 依赖下载单独占一层，之后改 Java 代码不会重新下载整个依赖树。
+# 只先复制 POM，把依赖下载单独缓存成一层：
+# 之后改 Java 代码不会重新下载整个依赖树。
 COPY pom.xml ./
 COPY digital-human/pom.xml digital-human/
 COPY digital-human-mcp/pom.xml digital-human-mcp/
-COPY knowledge-agent/pom.xml knowledge-agent/
 RUN mvn -B -ntp -pl digital-human -am dependency:go-offline
 
 # 再复制源码并打包（跳过测试：一键启动要快，跑测试请用 ./mvnw test）

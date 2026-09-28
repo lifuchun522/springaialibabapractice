@@ -7,7 +7,7 @@
 #   浏览器打开 http://localhost:8080/run/1   ← 运行页（第 3 掌那张页面）
 #   MCP Server 在 http://localhost:8081/mcp  ← 第 7 掌拆出去的那个独立进程
 #
-# 与 docker-compose.yml 的区别（两份文件不要混用）：
+# 与 docker-compose.yml 的区别（两份文件都不要混用）：
 #   docker-compose.yml            用**已构建好的镜像**部署（CI 推镜像 → 服务器 up -d），数据库在生产侧；
 #   docker-compose.quickstart.yml 本机体验用：镜像在这里从源码构建，MySQL 一起起，密钥从环境变量进来。
 #
