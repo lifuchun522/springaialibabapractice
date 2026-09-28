@@ -1,0 +1,51 @@
+﻿=> 	private final int maxAttempts;
+=> 		this.maxAttempts = builder.maxAttempts;
+=> 		// maxAttempts counts the initial call plus retries and is always >= 1, so the tool is executed at least once and is never skipped.
+=> 		for (int attempt = 0; attempt < maxAttempts; attempt++) {
+=> 				ToolCallResponse response = handler.call(request);
+=> 				if (ToolCallResponse.SUCCESS_STATUS.equals(response.getStatus())) {
+=> 					return response;
+=> 				// A non-success status is treated as a failure so it can be retried.
+=> 				String result = response.getResult() != null ? response.getResult() : "unknown error";
+=> 				throw new RuntimeException(result);
+=> 				// Last attempt failed: Stop the operation
+=> 				if (attempt >= maxAttempts - 1) {
+=> 						toolName, attempt + 1, maxAttempts, delay, e.getMessage());
+=> 			throw new RuntimeException("Tool call failed after " + maxAttempts + " attempts", lastException);
+=> 					: "Tool call failed after " + maxAttempts + " attempts: " + lastException.getMessage();
+=> 			log.error("Tool '{}' failed after {} attempts: {}", toolName, maxAttempts, lastException.getMessage());
+=> 		// Total number of attempts including the first call.
+=> 		private int maxAttempts = 3;
+=> 		/**
+=> 		 * Set the maximum number of attempts, including the first call. Must be >= 1.
+=> 		 * @param maxAttempts total attempts (initial call plus retries)
+=> 		 */
+=> 		public Builder maxAttempts(int maxAttempts) {
+=> 			if (maxAttempts < 1) {
+=> 				throw new IllegalArgumentException("maxAttempts must be >= 1");
+=> 			this.maxAttempts = maxAttempts;
+=> 		/**
+=> 		 * Set the maximum number of retries (excluding the first call).
+=> 		 * @param maxRetries number of retries; total attempts will be {@code maxRetries + 1}
+=> 		 * @deprecated use {@link #maxAttempts(int)} instead, which counts the initial call
+=> 		 */
+=> 		@Deprecated
+=> 			this.maxAttempts = maxRetries + 1;
+=> 			}
+=> 				}
+=> 			return this;
+=> 		}
+<= 	private final int maxRetries;
+<= 		this.maxRetries = builder.maxRetries;
+<= 		int attempt = 0;
+<= 		while (attempt <= maxRetries) {
+<= 				return handler.call(request);
+<= 				if (attempt == maxRetries) {
+<= 					// Max retries reached
+<= 						toolName, attempt + 1, maxRetries + 1, delay, e.getMessage());
+<= 				attempt++;
+<= 			throw new RuntimeException("Tool call failed after " + (maxRetries + 1) + " attempts", lastException);
+<= 					: "Tool call failed after " + (maxRetries + 1) + " attempts: " + lastException.getMessage();
+<= 			log.error("Tool '{}' failed after {} attempts: {}", toolName, maxRetries + 1, lastException.getMessage());
+<= 		private int maxRetries = 2;
+<= 			this.maxRetries = maxRetries;

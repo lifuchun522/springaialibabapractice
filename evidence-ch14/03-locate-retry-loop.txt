@@ -1,0 +1,6 @@
+﻿spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/interceptor/toolretry/ToolRetryInterceptor.java:86
+      while (attempt <= maxRetries) {
+spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/tools/WebFetchTool.java:232
+      while (attempt <= this.maxRetries) {
+spring-ai-alibaba-graph-core@1.1.2.2  com/alibaba/cloud/ai/graph/scheduling/ScheduledAgentTask.java:147
+      while (attempt <= config.getMaxRetries()) {
