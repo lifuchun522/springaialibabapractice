@@ -148,6 +148,23 @@ management:
     web:
       exposure:
         include: health,info
+  endpoint:
+    health:
+      # 第 16 掌：探针要能区分「进程活着」和「关键配置齐了」。
+      # 不显示细节时，运维看到的只是一个 UP/DOWN，排查还得登机器看日志。
+      show-details: always
+      probes:
+        enabled: true
+      group:
+        # liveness：只问「进程还在不在」。它绝不能包含配置与数据库——
+        # 否则配置一缺、库一抖，K8s 就会把还活着的进程反复杀掉重启，
+        # 把「配置问题」放大成「服务雪崩」。
+        liveness:
+          include: ping
+        # readiness：问「现在能不能接流量」。这里包含配置就绪与数据库，
+        # 缺任意一项都不该被挂进负载均衡。
+        readiness:
+          include: configReadiness,db,diskSpace
 
 logging:
   level:

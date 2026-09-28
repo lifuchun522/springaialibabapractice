@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.digitalhuman.domain.PendingTitleChange;
 import com.example.digitalhuman.domain.ToolCallAudit;
-import com.example.digitalhuman.repository.ToolCallAuditRepository;
 import com.example.digitalhuman.service.AuthService;
 import com.example.digitalhuman.service.ProjectService;
 import com.example.digitalhuman.service.TitleChangeService;
+import com.example.digitalhuman.service.ToolAuditService;
 
 /** 工具调用审计与待确认变更的查询入口（都属于运营可查的事实，不是模型能编的内容）。 */
 @RestController
@@ -23,16 +23,16 @@ public class ToolController {
     private final AuthService authService;
     private final ProjectService projectService;
     private final TitleChangeService titleChangeService;
-    private final ToolCallAuditRepository audits;
+    private final ToolAuditService toolAuditService;
 
     public ToolController(AuthService authService,
                           ProjectService projectService,
                           TitleChangeService titleChangeService,
-                          ToolCallAuditRepository audits) {
+                          ToolAuditService toolAuditService) {
         this.authService = authService;
         this.projectService = projectService;
         this.titleChangeService = titleChangeService;
-        this.audits = audits;
+        this.toolAuditService = toolAuditService;
     }
 
     public record ToolAuditView(Long id, String toolName, String arguments, String resultSummary,
@@ -58,8 +58,7 @@ public class ToolController {
     @GetMapping("/tool-audits")
     public List<ToolAuditView> toolAudits(@RequestHeader("X-Token") String token, @PathVariable Long id) {
         Long ownerId = authService.requireUserId(token);
-        projectService.requireOwned(ownerId, id);
-        return audits.findByProjectIdOrderByIdDesc(id).stream().map(ToolAuditView::of).toList();
+        return toolAuditService.listForOwner(ownerId, id).stream().map(ToolAuditView::of).toList();
     }
 
     /** 待确认的写变更：还没生效，等人确认。 */

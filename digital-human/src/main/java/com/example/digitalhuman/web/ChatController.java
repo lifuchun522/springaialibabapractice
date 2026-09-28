@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.example.digitalhuman.config.SseHeartbeat;
 import com.example.digitalhuman.service.AuthService;
 import com.example.digitalhuman.service.ChatLedgerService;
 import com.example.digitalhuman.service.ConversationRequest;
@@ -37,15 +38,18 @@ public class ChatController {
     private final ChatLedgerService ledgerService;
     private final AuthService authService;
     private final ProjectService projectService;
+    private final SseHeartbeat sseHeartbeat;
 
     public ChatController(DigitalHumanChatService chatService,
                           ChatLedgerService ledgerService,
                           AuthService authService,
-                          ProjectService projectService) {
+                          ProjectService projectService,
+                          SseHeartbeat sseHeartbeat) {
         this.chatService = chatService;
         this.ledgerService = ledgerService;
         this.authService = authService;
         this.projectService = projectService;
+        this.sseHeartbeat = sseHeartbeat;
     }
 
     /** 第 1 掌就在用的 GET 接口；不带 projectId 时走默认人设。 */
@@ -70,8 +74,12 @@ public class ChatController {
      *
      * <p>写能力（{@code allowWrite=true}）必须带登录身份：没有身份就不发写工具，
      * 免得待确认记录挂在一个假 owner 名下、谁也确认不了。
+     *
+     * <p>第 16 掌把 {@code produces} 显式写出来的原因：这是**契约的一部分**。
+     * 不写时前端也能跑（Spring 会按返回值协商），但「能跑」和「说清楚」是两件事——
+     * 前端联调时第一个问题永远是「返回什么类型、字段叫什么」，而答案应该在 Controller 上就能读到。
      */
-    @PostMapping("/projects/{id}/chat")
+    @PostMapping(value = "/projects/{id}/chat", produces = MediaType.APPLICATION_JSON_VALUE)
     public ChatReply chatForProject(@RequestHeader(value = "X-Token", required = false) String token,
                                     @PathVariable("id") Long projectId,
                                     @RequestBody ChatRequest request) {
@@ -90,6 +98,11 @@ public class ChatController {
      *
      * <p>用 GET 是为了让 curl 与前端都能直接消费；请求一旦开始，HTTP 状态码就固定了，
      * 所以流内错误改成最后一帧 {@code event: error}，而不是抛出去变成一个已经无意义的 500。
+     *
+     * <p>第 16 掌补的那一半是**心跳**：模型思考或工具执行期间可能几十秒没有下行数据，
+     * 而任何一层网关的空闲超时都会把这种静默判成死连接——直连正常、过网关就断的
+     * 「假流式」就是这么来的。心跳帧是注释行，客户端按 SSE 规范直接忽略，
+     * 它只负责让链路看到连接还活着（见 {@code SseHeartbeat}）。
      */
     @GetMapping(value = "/projects/{id}/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> streamForProject(
@@ -103,11 +116,13 @@ public class ChatController {
         }
         // 与阻塞式同一条规则：写能力必须带登录身份
         Long userId = allowWrite ? authService.requireUserId(token) : null;
-        return chatService.stream(new ConversationRequest(projectId, sessionId, userId, text, allowWrite))
-                .map(chunk -> ServerSentEvent.builder(chunk).build())
-                .onErrorResume(ex -> Flux.just(ServerSentEvent.builder(String.valueOf(ex.getMessage()))
-                        .event("error")
-                        .build()));
+        Flux<ServerSentEvent<String>> tokens =
+                chatService.stream(new ConversationRequest(projectId, sessionId, userId, text, allowWrite))
+                        .map(chunk -> ServerSentEvent.builder(chunk).build())
+                        .onErrorResume(ex -> Flux.just(ServerSentEvent.builder(String.valueOf(ex.getMessage()))
+                                .event("error")
+                                .build()));
+        return sseHeartbeat.attach(tokens);
     }
 
     /** 产品历史：按项目 + 会话查账本，与模型看到的 Memory 窗口无关。 */

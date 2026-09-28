@@ -1,0 +1,12 @@
+﻿docker : time="2026-09-28T21:42:35+08:00" level=warning msg="The \"APP_DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+At line:1 char:774
++ ... _API_KEY=''; docker compose -f docker-compose.yml config 2>&1 | Out-F ...
++                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (time="2026-09-2... blank string.":String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+time="2026-09-28T21:42:35+08:00" level=warning msg="The \"APP_MCP_DB_USER\" variable is not set. Defaulting to a blank string."
+time="2026-09-28T21:42:35+08:00" level=warning msg="The \"APP_MCP_DB_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2026-09-28T21:42:35+08:00" level=warning msg="The \"APP_MCP_DB_URL\" variable is not set. Defaulting to a blank string."
+time="2026-09-28T21:42:35+08:00" level=warning msg="The \"APP_MCP_IMAGE\" variable is not set. Defaulting to a blank string."
+error while interpolating services.digital-human.environment.DIGITAL_HUMAN_DB_URL: required variable APP_DB_URL is missing a value: 缺少 APP_DB_URL：数据库地址必须由部署环境声明（deploy/.env 或 K8s ConfigMap）

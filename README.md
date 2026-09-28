@@ -235,6 +235,11 @@ export DIGITAL_HUMAN_DB_PASSWORD=root
 | 15 | 给 LLM Judge 判据就能评质量 | 第一次跑评测，**判据完全正确的用例被 Judge 判 0 分**：判据是「没编造资料以外的折扣」，但 Judge 只拿到判据和回答，看不到资料里本来就写着「满 20 台 7.5 折」——**Judge 看不到事实，就会把事实当编造** | 给 `LlmJudge` 增加 `reference` 形参，把召回的资料原文一起交给它；校准集也必须自带事实来源，否则量出来的是「样本全不全」，不是「Judge 准不准」 |
 | 15 | 安全拒绝用规则断言「必须拒答」 | 同一用例两次运行，模型两次都明确拒答，但说法从「这个角色我**不演**哈」变成「这个『新角色』我就**不接**啦」——**两次假红** | 措辞类判据不该用规则：4 条安全用例改为「规则管禁止内容硬约束 + Judge 管是否明确拒绝」，并撤回那次「往判据表补词」的临时修法 |
 | 15 | 无依据就拒答，不调模型 | 该分支在当前配置下**走不到**：本地哈希嵌入让任意中文问句都能召回一条无关片段（本次 score≈0.0995 > `min-score=0.01`），于是走了「有依据」分支，模型自己在文本层说「资料里没有相关内容」 | **不修**：属于第 8 章的阈值与知识契约问题；把它作为一条**持续失败**的评测用例留在数据集里（`pk-003`），L4 重放因此能稳定复现这条缺陷 |
+| 16 | 加了健康检查就算可交付了 | 真实压测撞上一次「流式响应一个片段都没有」：服务端 200、连接正常关闭、前端什么都没收到，**而账本把这条助手消息记成 `COMPLETED`（长度 0）**；同一 prompt 换阻塞式接口会被明确判成 `EMPTY_RESPONSE` 失败 | 流式路径补 `switchIfEmpty` 显式失败 + 账本记 FAILED；断言钉住「失败后会话锁必须释放」（`EmptyStreamContractTest`）——同一个语义在两条契约上必须表现一致 |
+| 16 | 分层就是分目录 | 用 ArchUnit 把依赖方向写成规则，**第一次跑就抓到真实违规**：`ToolController` 直接注入 repository 查库（授权/归属/查询三件事混进 HTTP 层）；同一轮还暴露我自己的规则**写宽了**（`..web..` 把 Spring 的 `org.springframework.web..` 一起匹配，误报 23 处） | 新增 `ToolAuditService` 把用例收回 service 层；规则改成精确包名 `com.example.digitalhuman.web..`——门禁也是代码，宽窄都要拿真实违规校一次 |
+| 16 | 本地跑得好就说明服务没问题 | 真实流式请求打出框架警告：`default Spring MVC SimpleAsyncTaskExecutor … not suitable for production use under load`（每请求新建线程、无上限无队列）；**功能全对，交付标准不过**，任何功能测试都挡不住它 | 配 `WebAsyncConfig`：有界线程池（4/32/200）+ 显式 5 分钟超时 + 优雅停机；修复后同一条真实链路的日志里不再出现该警告 |
+| 16 | 配置外置就算完事 | compose 里写 `${APP_DEEPSEEK_API_KEY}`，没设就是空字符串——缺失被带进容器，变成第一次请求的 401（正是文章 06 链 A） | 必需项改写成 `${VAR:?提示}`：缺变量时 `docker compose config` 直接拒绝并打印「缺哪个、去哪儿声明」；探针同时从 `/actuator/health` 换成 `/actuator/health/readiness` |
+
 
 ## 九、能学到什么：本仓库能核验到什么
 
@@ -329,7 +334,7 @@ MCP_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human_ext?...' ./mvnw -pl digit
 | 13 | 密云不雨 · 跨域 A2A | `chapter/13-a2a-nacos` | `ch13` | ✅ 知识 Agent 独立进程 + 能力声明/任务生命周期/版本协商 + 发现层可换（[文章](https://cloud.tencent.com/developer/article/2752092)） |
 | 14 | 损则有孚 · 溯源源码 | `chapter/14-source-pr` | `ch14` | ✅ 行为钉到 1.1.2.2 的行号 + 最小复现 + 上游 Issue 草稿（[文章](https://cloud.tencent.com/developer/article/2752091)） |
 | 15 | 龙战于野 · 试炼评测 | `chapter/15-eval-guard` | `ch15` | ✅ 五层测试（L1 单元 / L2 MockWebServer 打桩 / L3 Testcontainers / L4 快照重放 / L5 在线评测）+ 六类回归集 24 条 + Judge 校准（[文章](https://cloud.tencent.com/developer/article/2752089)） |
-| 16 | 履霜冰至 · 立派服务 | `chapter/16-spring-service` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752087)与视频已发布） |
+| 16 | 履霜冰至 · 立派服务 | `chapter/16-spring-service` | `ch16` | ✅ 依赖方向门禁（ArchUnit 6 条）+ 启动期部署契约 + 健康分组（liveness / readiness）+ SSE 心跳与有界异步执行器 + 生产边界（`/internal/llm/v1` 在 prod 下 404）+ 可执行接口契约（[文章](https://cloud.tencent.com/developer/article/2752087)） |
 | 17 | 羝羊触藩 · 观星治理 | `chapter/17-observability-admin` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752086)与视频已发布） |
 | 18 | 神龙摆尾 · 登云 K8s | `chapter/18-k8s-production` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752084)与视频已发布） |
 

@@ -127,6 +127,31 @@
         </dependency>
 
         <!--
+          第 16 掌：分层的第一价值是**变更隔离**，而隔离的判据是依赖方向，不是目录结构。
+          光把文件挪进不同的包，`web` 里照样能 import ChatClient，得到的只会是一个更精致的 Demo——
+          所以这一掌把依赖方向写成**可执行的规则**（ArchUnit），并放进 CI 阻断路径：
+          违反一次就红一次，而不是等 review 时靠人眼发现。
+          版本显式钉住：archunit-junit5 不在 Spring Boot 的依赖管理里。
+        -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>1.4.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+          第 16 掌：SSE 是流式契约，而流式最容易出的不是「内容错了」，是「流不结束」——
+          数据早答完了、连接还开着，客户端只能等超时。这类断言用 StepVerifier 写才看得清
+          （完成信号、取消信号、时间轴都由它显式表达）。版本由 spring-boot-dependencies 管。
+        -->
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
           第 13 掌：服务发现。注册中心是**可选中间层**——
           本地单实例开发用配置里的静态实例表，多实例/扩缩容时才需要 Nacos；
           Nacos 不可用时明确告警并退回静态表，主服务不会因为注册中心挂掉而不可用。

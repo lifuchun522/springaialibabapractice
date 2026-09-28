@@ -1,0 +1,2 @@
+﻿2026-09-28T21:42:35.253+08:00 ERROR 25512 --- [digital-human] [           main] o.s.boot.SpringApplication               : Application run failed
+java.lang.IllegalStateException: 部署契约不满足：缺少必需配置 spring.ai.openai.api-key（环境变量 DEEPSEEK_API_KEY）。它是模型通道的凭据，只允许从环境注入，禁止进镜像与版本库。 这一项没有安全默认值——给占位值只会把启动期错误推迟成第一次请求的失败。请在部署清单里声明它（deploy/.env、K8s Secret 或 docker run -e）。

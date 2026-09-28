@@ -69,7 +69,10 @@ CHAPTERS = [
     (15, "龙战于野", "试炼评测", "chapter/15-eval-guard", "ch15", 51, "Done",
      "五层测试（L1 单元 / L2 MockWebServer 断言出站请求 / L3 Testcontainers / L4 快照重放 / L5 在线评测）"
      "+ 六类回归集 24 条 + Judge 校准 + 可追溯运行记录；离线用例 127→142"),
-    (16, "履霜冰至", "立派服务", "chapter/16-spring-service", None, None, "Backlog", "待做"),
+    (16, "履霜冰至", "立派服务", "chapter/16-spring-service", "ch16", 0, "Done",
+     "依赖方向门禁（ArchUnit 6 条，第一次跑就抓到 ToolController 直连 repository）+ 启动期部署契约"
+     "（缺密钥即启动失败并点名环境变量）+ 健康分组 liveness/readiness + SSE 心跳与有界异步执行器"
+     "+ 生产边界（/internal/llm/v1 在 prod 下 404）+ 可执行接口契约；离线用例 133→157"),
     (17, "羝羊触藩", "观星治理", "chapter/17-observability-admin", None, None, "Backlog", "待做"),
     (18, "神龙摆尾", "登云 K8s", "chapter/18-k8s-production", None, None, "Backlog", "待做"),
 ]

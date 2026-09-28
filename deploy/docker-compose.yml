@@ -43,17 +43,22 @@ services:
     environment:
       TZ: Asia/Shanghai
       # 数据源
-      DIGITAL_HUMAN_DB_URL: ${APP_DB_URL}
-      DIGITAL_HUMAN_DB_USER: ${APP_DB_USER}
-      DIGITAL_HUMAN_DB_PASSWORD: ${APP_DB_PASSWORD}
+      # `${VAR:?提示}` 是第 16 掌补的「部署契约」：变量没设时 compose 直接拒绝启动并打印提示，
+      # 而不是把这个缺失带进容器、变成启动后第一次请求的一个 401。
+      # 只给「没有安全默认值」的项加这个约束；端口、模型名这类有默认值的项保持可省。
+      DIGITAL_HUMAN_DB_URL: ${APP_DB_URL:?缺少 APP_DB_URL：数据库地址必须由部署环境声明（deploy/.env 或 K8s ConfigMap）}
+      DIGITAL_HUMAN_DB_USER: ${APP_DB_USER:?缺少 APP_DB_USER}
+      DIGITAL_HUMAN_DB_PASSWORD: ${APP_DB_PASSWORD:?缺少 APP_DB_PASSWORD}
       # 模型密钥：只从环境变量进来，不进镜像、不进仓库
-      DEEPSEEK_API_KEY: ${APP_DEEPSEEK_API_KEY}
+      DEEPSEEK_API_KEY: ${APP_DEEPSEEK_API_KEY:?缺少 APP_DEEPSEEK_API_KEY：模型密钥只能由部署环境注入，禁止写默认值}
       # 容器内直连 MCP Server 的服务名，不用走宿主机端口
       MCP_SERVER_URL: http://digital-human-mcp:8081
     ports:
       - "${APP_PORT:-8080}:8080"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health >/dev/null || exit 1"]
+      # 探 readiness 而不是根 health：根 health 只说明「进程活着 + 依赖没挂」，
+      # readiness 里含 configReadiness，能区分「起来了」和「配置齐了、可以接流量」。
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health/readiness >/dev/null || exit 1"]
       interval: 20s
       timeout: 5s
       retries: 10
