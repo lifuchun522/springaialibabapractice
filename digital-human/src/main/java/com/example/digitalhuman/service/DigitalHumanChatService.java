@@ -1,6 +1,7 @@
 package com.example.digitalhuman.service;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.stereotype.Service;
@@ -10,56 +11,133 @@ import com.example.digitalhuman.ai.ChatOptionsFactory;
 import com.example.digitalhuman.ai.ModelInvocationException;
 import com.example.digitalhuman.config.DigitalHumanChatProperties;
 import com.example.digitalhuman.domain.AgentConfig;
+import com.example.digitalhuman.domain.ChatMessage;
 import com.example.digitalhuman.repository.AgentConfigRepository;
+
+import reactor.core.publisher.Flux;
 
 /**
  * 一次对话的组装点。
  *
- * <p>业务层只认 {@link ChatClient}、{@code ChatOptions} 和字符串：
- * provider 专有类型全部被关在 {@link ChatOptionsFactory} 里，所以换模型是改数据、不是改这里。
+ * <p>三件事在这里汇合，边界写清楚：
+ * <ul>
+ *   <li><b>人设与模型参数</b>来自项目配置（第 3、4 掌）；</li>
+ *   <li><b>短期记忆</b>交给 MessageChatMemoryAdvisor，业务代码只给 conversationId；</li>
+ *   <li><b>产品历史</b>单独落 chat_message 账本，开始/完成/取消/失败都留一笔。</li>
+ * </ul>
  *
- * <p>另一个职责是把上游异常收敛成 {@link ModelInvocationException}——
- * 业务代码不 catch 任何一家 SDK 的异常体系，否则等于把两家的报错都写死。
+ * <p>业务层不 catch 任何一家 SDK 的异常体系，底层异常统一收敛成 {@link ModelInvocationException}。
  */
 @Service
 public class DigitalHumanChatService {
 
     private static final String DEFAULT_PROVIDER = "default";
+    /** 未绑定项目的对话（第 1 掌的默认人设路径）在账本里归到项目 0。 */
+    private static final long NO_PROJECT = 0L;
 
     private final ChatClient chatClient;
     private final AgentConfigRepository agentConfigs;
     private final DigitalHumanChatProperties chatProperties;
     private final ChatOptionsFactory chatOptionsFactory;
+    private final ChatLedgerService ledger;
+    private final ConversationGuard conversationGuard;
 
     public DigitalHumanChatService(ChatClient chatClient,
                                    AgentConfigRepository agentConfigs,
                                    DigitalHumanChatProperties chatProperties,
-                                   ChatOptionsFactory chatOptionsFactory) {
+                                   ChatOptionsFactory chatOptionsFactory,
+                                   ChatLedgerService ledger,
+                                   ConversationGuard conversationGuard) {
         this.chatClient = chatClient;
         this.agentConfigs = agentConfigs;
         this.chatProperties = chatProperties;
         this.chatOptionsFactory = chatOptionsFactory;
+        this.ledger = ledger;
+        this.conversationGuard = conversationGuard;
+    }
+
+    /** 阻塞式一问一答（运行页的 GET 接口、Bridge 端点走这里）。 */
+    public String answer(ConversationRequest request) {
+        ConversationId conversationId = request.conversationId();
+        AgentConfig config = configOf(request.projectId());
+        ledger.append(ledgerProjectId(request), conversationId, request.userId(),
+                ChatMessage.Role.USER, request.text(), ChatMessage.Status.COMPLETED);
+
+        String provider = config == null ? DEFAULT_PROVIDER : config.getProvider();
+        String model = config == null ? DEFAULT_PROVIDER : config.getModel();
+        try {
+            String content = invoke(spec(config, conversationId), request.text(), provider, model);
+            ledger.append(ledgerProjectId(request), conversationId, request.userId(),
+                    ChatMessage.Role.ASSISTANT, content, ChatMessage.Status.COMPLETED);
+            return content;
+        } catch (ModelInvocationException ex) {
+            // 失败也留档：历史里看不到「为什么这条没有下文」，排查就只能靠猜
+            ledger.append(ledgerProjectId(request), conversationId, request.userId(),
+                    ChatMessage.Role.ASSISTANT, errorSummary(ex), ChatMessage.Status.FAILED);
+            throw ex;
+        }
     }
 
     /**
-     * @param projectId 数字人项目 id；为 null 时走第 1 掌的默认人设与默认模型
+     * 流式输出：上游 token 到达即向下游推送。
+     *
+     * <p>取消不是「什么都没发生」：客户端断开时把已收到的半截内容按 CANCELLED 落账
+     * （{@code doOnCancel}），否则产品历史里会出现一条永远没有回复的提问，而没人知道原因。
+     *
+     * <p>注意：这里的落库是阻塞式 JPA 调用，放在响应式回调里；本掌先保证语义正确，
+     * 生产化时再换成异步写入或 R2DBC（见 docs/ch05-验收记录.md 遗留问题）。
      */
-    public String answer(Long projectId, String question) {
-        if (question == null || question.isBlank()) {
-            throw new IllegalArgumentException("参数 q 不能为空");
+    public Flux<String> stream(ConversationRequest request) {
+        ConversationId conversationId = request.conversationId();
+        if (!conversationGuard.tryAcquire(conversationId.value())) {
+            throw new ConversationBusyException(conversationId.value());
         }
 
-        AgentConfig config = projectId == null ? null : agentConfigs.findByProjectId(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("项目缺少 Agent 配置：" + projectId));
+        AgentConfig config = configOf(request.projectId());
+        ledger.append(ledgerProjectId(request), conversationId, request.userId(),
+                ChatMessage.Role.USER, request.text(), ChatMessage.Status.COMPLETED);
 
+        StringBuilder received = new StringBuilder();
+        return spec(config, conversationId).user(request.text())
+                .stream()
+                .content()
+                .doOnNext(received::append)
+                .doOnComplete(() -> ledger.append(ledgerProjectId(request), conversationId, request.userId(),
+                        ChatMessage.Role.ASSISTANT, received.toString(), ChatMessage.Status.COMPLETED))
+                .doOnCancel(() -> ledger.append(ledgerProjectId(request), conversationId, request.userId(),
+                        ChatMessage.Role.ASSISTANT, received.toString(), ChatMessage.Status.CANCELLED))
+                .onErrorMap(ex -> toModelInvocationException(ex))
+                .doOnError(ex -> ledger.append(ledgerProjectId(request), conversationId, request.userId(),
+                        ChatMessage.Role.ASSISTANT, errorSummary(ex), ChatMessage.Status.FAILED))
+                .doFinally(signal -> conversationGuard.release(conversationId.value()));
+    }
+
+    private ChatClient.ChatClientRequestSpec spec(AgentConfig config, ConversationId conversationId) {
         ChatClient.ChatClientRequestSpec spec = config == null
                 ? chatClient.prompt().system(chatProperties.defaultSystem())
                 : chatClient.prompt().system(config.getSystemPrompt())
                         .options(chatOptionsFactory.optionsFor(config));
+        // 记忆的读写发生在 Advisor 里，这里只声明「这是哪个会话」
+        return spec.advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId.value()));
+    }
 
-        String provider = config == null ? DEFAULT_PROVIDER : config.getProvider();
-        String model = config == null ? DEFAULT_PROVIDER : config.getModel();
-        return invoke(spec, question, provider, model);
+    private AgentConfig configOf(Long projectId) {
+        if (projectId == null) {
+            return null;
+        }
+        return agentConfigs.findByProjectId(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("项目缺少 Agent 配置：" + projectId));
+    }
+
+    private long ledgerProjectId(ConversationRequest request) {
+        return request.projectId() == null ? NO_PROJECT : request.projectId();
+    }
+
+    private static String errorSummary(Throwable ex) {
+        if (ex instanceof ModelInvocationException invocation) {
+            return "[" + invocation.kind().name() + "] " + invocation.getMessage();
+        }
+        return "[" + ex.getClass().getSimpleName() + "] " + ex.getMessage();
     }
 
     private String invoke(ChatClient.ChatClientRequestSpec spec, String question,
@@ -67,16 +145,11 @@ public class DigitalHumanChatService {
         String content;
         try {
             content = spec.user(question.trim()).call().content();
-        } catch (NonTransientAiException ex) {
-            throw new ModelInvocationException(isAuthFailure(ex) ? ModelInvocationException.Kind.AUTH
-                    : ModelInvocationException.Kind.PROVIDER_ERROR,
-                    provider, model, "模型提供方拒绝了这次调用：" + ex.getMessage(), ex);
-        } catch (TransientAiException ex) {
-            throw new ModelInvocationException(ModelInvocationException.Kind.UNAVAILABLE,
-                    provider, model, "模型提供方暂时不可用：" + ex.getMessage(), ex);
-        } catch (ResourceAccessException ex) {
-            throw new ModelInvocationException(ModelInvocationException.Kind.TIMEOUT,
-                    provider, model, "调用模型超时或网络不可达：" + ex.getMessage(), ex);
+        } catch (RuntimeException ex) {
+            if (ex instanceof ModelInvocationException invocation) {
+                throw invocation;
+            }
+            throw (RuntimeException) toModelInvocationException(ex, provider, model);
         }
 
         if (content == null || content.isBlank()) {
@@ -85,6 +158,30 @@ public class DigitalHumanChatService {
                     provider, model, "模型返回了空内容（HTTP 成功但没有有效回复）", null);
         }
         return content;
+    }
+
+    private Throwable toModelInvocationException(Throwable ex) {
+        return toModelInvocationException(ex, DEFAULT_PROVIDER, DEFAULT_PROVIDER);
+    }
+
+    private Throwable toModelInvocationException(Throwable ex, String provider, String model) {
+        if (ex instanceof ModelInvocationException) {
+            return ex;
+        }
+        if (ex instanceof NonTransientAiException nonTransient) {
+            return new ModelInvocationException(isAuthFailure(nonTransient)
+                    ? ModelInvocationException.Kind.AUTH : ModelInvocationException.Kind.PROVIDER_ERROR,
+                    provider, model, "模型提供方拒绝了这次调用：" + nonTransient.getMessage(), nonTransient);
+        }
+        if (ex instanceof TransientAiException transientEx) {
+            return new ModelInvocationException(ModelInvocationException.Kind.UNAVAILABLE,
+                    provider, model, "模型提供方暂时不可用：" + transientEx.getMessage(), transientEx);
+        }
+        if (ex instanceof ResourceAccessException accessException) {
+            return new ModelInvocationException(ModelInvocationException.Kind.TIMEOUT,
+                    provider, model, "调用模型超时或网络不可达：" + accessException.getMessage(), accessException);
+        }
+        return ex;
     }
 
     private static boolean isAuthFailure(NonTransientAiException ex) {

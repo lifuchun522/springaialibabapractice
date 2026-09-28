@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.example.digitalhuman.ai.ModelInvocationException;
 import com.example.digitalhuman.ai.ModelRoutingException;
 import com.example.digitalhuman.service.AuthenticationFailedException;
+import com.example.digitalhuman.service.ConversationBusyException;
 import com.example.digitalhuman.service.ResourceNotFoundException;
 import com.example.digitalhuman.service.UsernameExistsException;
 
@@ -48,6 +49,13 @@ public class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleRouting(ModelRoutingException ex) {
         return Map.of("error", ex.getMessage(), "type", "MODEL_NOT_CONFIGURED");
+    }
+
+    /** 同一会话已有在途请求：窗口是有序状态，宁可拒绝也不并发写。 */
+    @ExceptionHandler(ConversationBusyException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleBusy(ConversationBusyException ex) {
+        return Map.of("error", ex.getMessage(), "type", "CONVERSATION_BUSY");
     }
 
     /**

@@ -105,20 +105,20 @@ git push origin ch04
 | 2 | 飞龙在天 · 筑基环境 | `chapter/02-baseline-env` | `ch02` | 已合入 main：mvnw + 版本对齐门禁 + 环境自检脚本 |
 | 3 | 见龙在田 · 数字人底座 | `chapter/03-digital-human-demo` | `ch03` | 已合入 main：三张表 + 注册登录 + 项目 CRUD + 运行页 |
 | 4 | 鸿渐于陆 · 御模对话 | `chapter/04-chat-model` | `ch04` | 已合入 main：provider 进数据 + 模型目录 + 确定的错误响应 |
-| 5 | 潜龙勿用 · 藏忆流式 | `chapter/05-memory-streaming` | — | 待做 |
-| 6 | 利涉大川 · 御器工具 | `chapter/06-tools` | 待做 |
-| 7 | 突如其来 · 通玄 MCP | `chapter/07-mcp` | 待做 |
-| 8 | 震惊百里 · 入藏 RAG | `chapter/08-rag` | 待做 |
-| 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | 待做 |
-| 10 | 双龙取水 · 百阵流程 | `chapter/10-workflow-agents` | 待做 |
-| 11 | 鱼跃于渊 · 图谱 Graph | `chapter/11-graph-core` | 待做 |
-| 12 | 时乘六龙 · 分身多 Agent | `chapter/12-multi-agent` | 待做 |
-| 13 | 密云不雨 · 跨域 A2A | `chapter/13-a2a-nacos` | 待做 |
-| 14 | 损则有孚 · 溯源源码 | `chapter/14-source-pr` | 待做 |
-| 15 | 龙战于野 · 试炼评测 | `chapter/15-eval-guard` | 待做 |
-| 16 | 履霜冰至 · 立派服务 | `chapter/16-spring-service` | 待做 |
-| 17 | 羝羊触藩 · 观星治理 | `chapter/17-observability-admin` | 待做 |
-| 18 | 神龙摆尾 · 登云 K8s | `chapter/18-k8s-production` | 待做 |
+| 5 | 潜龙勿用 · 藏忆流式 | `chapter/05-memory-streaming` | `ch05` | 已合入 main：会话记忆 + SSE 流式 + 消息账本 |
+| 6 | 利涉大川 · 御器工具 | `chapter/06-tools` | — | 待做 |
+| 7 | 突如其来 · 通玄 MCP | `chapter/07-mcp` | — | 待做 |
+| 8 | 震惊百里 · 入藏 RAG | `chapter/08-rag` | — | 待做 |
+| 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | — | 待做 |
+| 10 | 双龙取水 · 百阵流程 | `chapter/10-workflow-agents` | — | 待做 |
+| 11 | 鱼跃于渊 · 图谱 Graph | `chapter/11-graph-core` | — | 待做 |
+| 12 | 时乘六龙 · 分身多 Agent | `chapter/12-multi-agent` | — | 待做 |
+| 13 | 密云不雨 · 跨域 A2A | `chapter/13-a2a-nacos` | — | 待做 |
+| 14 | 损则有孚 · 溯源源码 | `chapter/14-source-pr` | — | 待做 |
+| 15 | 龙战于野 · 试炼评测 | `chapter/15-eval-guard` | — | 待做 |
+| 16 | 履霜冰至 · 立派服务 | `chapter/16-spring-service` | — | 待做 |
+| 17 | 羝羊触藩 · 观星治理 | `chapter/17-observability-admin` | — | 待做 |
+| 18 | 神龙摆尾 · 登云 K8s | `chapter/18-k8s-production` | — | 待做 |
 
 ## 目录
 

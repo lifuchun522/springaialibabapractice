@@ -45,6 +45,9 @@ digital-human:
   chat:
     # 新建项目时写入 agent_config 的默认人设；运营可在项目里改，改完刷新运行页即生效
     default-system: 你是一个专业的数字人主播，回答简洁友好。
+  memory:
+    # 模型短期看多少条消息（投影，可丢可重建）；产品历史另有 chat_message 账本
+    max-messages: 20
   # 模型目录：有哪些 provider、每个 provider 下有哪些模型，全部是配置。
   # agent_config.provider / model 必须命中这里，否则改配置时直接 400、启动期也不会带病运行。
   models:
