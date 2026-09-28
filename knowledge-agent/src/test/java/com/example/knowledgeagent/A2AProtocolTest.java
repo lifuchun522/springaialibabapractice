@@ -131,7 +131,7 @@ class A2AProtocolTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
         assertThat(queried.get("state").asText()).isEqualTo("COMPLETED");
 
-        // 流式端点的「边到边消费」由真实验收证明（evidence-ch13/：curl -N 抓到的 SSE 帧）：
+        // 流式端点的「边到边消费」由真实验收证明（scripts/evidence-ch13/：curl -N 抓到的 SSE 帧）：
         // MockMvc 不会等异步流写完，在这里断言 SSE 体只会得到一个假失败
         mockMvc.perform(post("/a2a/tasks/" + taskId + "/events")
                         .header(A2AProtocol.TRACE_HEADER, "trace-test-1"))
