@@ -10,6 +10,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 用假 Key 只为让自动装配过关，本测试不发起任何真实模型调用。
  */
 @SpringBootTest(properties = "spring.ai.openai.api-key=test-key-not-used")
+@ActiveProfiles("test")
 class DigitalHumanApplicationTest {
 
     @Autowired

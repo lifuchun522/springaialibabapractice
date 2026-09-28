@@ -38,6 +38,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\env-check.ps1   # Wi
 系列基线是 DashScope，但本仓库当前只验证 DeepSeek 通道，所以不引入「引了但不用」的通道——
 等需要 DashScope 的章节（第 3 掌语音、第 8 掌 Embedding）再按章引入。
 
+## 数据存储
+
+| 环境 | 数据源 | 表结构 |
+|------|--------|--------|
+| 运行 | MySQL 8（`DIGITAL_HUMAN_DB_URL/USER/PASSWORD`） | Flyway 迁移 + Hibernate `validate` |
+| 测试 | H2 内存库（`application-test.yml`） | Hibernate `create-drop` |
+
+```bash
+# 运行期需要一个 MySQL（测试不需要）
+docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=digital_human -p 3306:3306 mysql:8
+```
+
 ```bash
 export DEEPSEEK_API_KEY=sk-xxxx          # Windows: set DEEPSEEK_API_KEY=sk-xxxx
 ./mvnw -pl digital-human spring-boot:run
@@ -78,7 +90,7 @@ Issue（本章要落的能力与验收标准）
 |----|------|------|------|
 | 1 | 亢龙有悔 · 识势选型 | `chapter/01-value-selection` | 已完成：五层架构 + ChatClient 唯一出口骨架（待 PR 合入 main） |
 | 2 | 飞龙在天 · 筑基环境 | `chapter/02-baseline-env` | 已完成：mvnw + 版本对齐门禁 + 环境自检脚本（待 PR 合入 main） |
-| 3 | 见龙在田 · 数字人底座 | `chapter/03-digital-human-demo` | 待做 |
+| 3 | 见龙在田 · 数字人底座 | `chapter/03-digital-human-demo` | 已完成：三张表 + 注册登录 + 项目 CRUD + 运行页 + 文本问答（LiveKit 语音待接） |
 | 4 | 鸿渐于陆 · 御模对话 | `chapter/04-chat-model` | 待做 |
 | 5 | 潜龙勿用 · 藏忆流式 | `chapter/05-memory-streaming` | 待做 |
 | 6 | 利涉大川 · 御器工具 | `chapter/06-tools` | 待做 |

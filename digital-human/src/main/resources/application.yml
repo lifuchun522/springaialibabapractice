@@ -4,6 +4,19 @@ server:
 spring:
   application:
     name: digital-human
+  datasource:
+    # 本地 MySQL 8：docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root \
+    #   -e MYSQL_DATABASE=digital_human -p 3306:3306 mysql:8
+    url: ${DIGITAL_HUMAN_DB_URL:jdbc:mysql://127.0.0.1:3306/digital_human?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${DIGITAL_HUMAN_DB_USER:root}
+    password: ${DIGITAL_HUMAN_DB_PASSWORD:root}
+  jpa:
+    # 表结构由 Flyway 建，Hibernate 只做校验：谁能改表结构必须唯一
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
   ai:
     model:
       # 本项目只提供一条模型通道：DeepSeek（OpenAI 兼容协议）。
@@ -30,8 +43,8 @@ spring:
 
 digital-human:
   chat:
-    # System Prompt 属于配置：同一份代码服务多个数字人项目
-    default-system: 你是一个数字人助手，回答简短、口语化。
+    # 新建项目时写入 agent_config 的默认人设；运营可在项目里改，改完刷新运行页即生效
+    default-system: 你是一个专业的数字人主播，回答简洁友好。
 
 management:
   endpoints:

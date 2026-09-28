@@ -58,6 +58,18 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!--
+              第 3 掌引入 JPA 后，dependencyConvergence 门禁第一次真的拦住了东西：
+                Hibernate(经 spring-data-jpa) → antlr4-runtime 4.13.0
+                Spring AI 的 ST 模板         → antlr4-runtime 4.13.1
+              处置方式是统一到较高的补丁版本，而不是把门禁关掉或 exclude 掉其中一个。
+            -->
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-runtime</artifactId>
+                <version>4.13.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
