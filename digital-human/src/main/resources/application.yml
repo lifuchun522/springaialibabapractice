@@ -18,6 +18,20 @@ spring:
   flyway:
     enabled: true
   ai:
+    # MCP Client：远程消费展厅预约 Server 的工具。
+    # 端点约定必须和 Server 的 protocol 对齐（STREAMABLE ↔ streamable-http），
+    # 配错不会报「协议不匹配」，只会得到 404，然后被静默当成「没有工具」。
+    mcp:
+      client:
+        enabled: true
+        name: digital-human
+        version: 1.0.0
+        type: SYNC
+        streamable-http:
+          connections:
+            showroom:
+              url: ${MCP_SERVER_URL:http://localhost:8081}
+              endpoint: /mcp
     model:
       # 本项目只提供一条模型通道：DeepSeek（OpenAI 兼容协议）。
       # 系列基线是 DashScope，等需要它的章节（第 3 掌语音、第 8 掌 Embedding）再按章引入，
@@ -52,6 +66,11 @@ digital-human:
     # 工具执行时间上限：下游卡住不能把整个对话线程拖死
     timeout-ms: 3000
     pool-size: 4
+  mcp:
+    # 远程工具发现：清单为空时是否直接启动失败。
+    # 默认开着：Server 没起来时「工具静默为空」比启动失败更难查——
+    # 前者表现为模型忽然不会查预约了，后者在启动日志里就写着原因。
+    fail-fast: true
   # 模型目录：有哪些 provider、每个 provider 下有哪些模型，全部是配置。
   # agent_config.provider / model 必须命中这里，否则改配置时直接 400、启动期也不会带病运行。
   models:

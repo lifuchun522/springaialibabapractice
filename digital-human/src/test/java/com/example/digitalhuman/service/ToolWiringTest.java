@@ -64,6 +64,7 @@ class ToolWiringTest {
     void answer_shouldRegisterReadOnlyToolsOnly_byDefault() {
         ToolRegistry registry = mock(ToolRegistry.class);
         when(registry.readOnly()).thenReturn(callbacks("getProjectInfo"));
+        when(registry.remote()).thenReturn(new ToolCallback[0]);
         when(registry.write()).thenReturn(callbacks("proposeTitleChange"));
 
         serviceWith(registry, chatModel()).answer(new ConversationRequest(null, "s1", 1L, "你好"));
@@ -77,6 +78,7 @@ class ToolWiringTest {
     void answer_shouldRegisterWriteTools_whenExplicitlyRequested() {
         ToolRegistry registry = mock(ToolRegistry.class);
         when(registry.readOnly()).thenReturn(callbacks("getProjectInfo"));
+        when(registry.remote()).thenReturn(new ToolCallback[0]);
         when(registry.write()).thenReturn(callbacks("proposeTitleChange"));
 
         serviceWith(registry, chatModel()).answer(new ConversationRequest(null, "s1", 1L, "改标题", true));

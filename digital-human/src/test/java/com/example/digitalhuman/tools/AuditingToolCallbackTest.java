@@ -131,6 +131,30 @@ class AuditingToolCallbackTest {
     }
 
     @Test
+    @DisplayName("call_shouldFallBackToExceptionTypeWhenMessageIsNull")
+    void call_shouldFallBackToExceptionTypeWhenMessageIsNull() {
+        when(audits.save(any(ToolCallAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            // 远程工具断连时 MCP 客户端会抛出没有 message 的异常：审计里不能只剩一个 null
+            ToolCallback wrapped = new AuditingToolCallback(
+                    callback("nullMessageTool", () -> {
+                        throw new IllegalStateException();
+                    }), audits, executor, 1000);
+
+            String result = wrapped.call("{}", context());
+
+            assertThat(result).contains("工具执行失败").contains("IllegalStateException");
+            var captor = org.mockito.ArgumentCaptor.forClass(ToolCallAudit.class);
+            verify(audits).save(captor.capture());
+            assertThat(captor.getValue().getResultSummary()).contains("IllegalStateException");
+            assertThat(captor.getValue().getStatus()).isEqualTo(ToolCallAudit.Status.ERROR);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
     @DisplayName("call_shouldKeepAuditEvenWhenRawContextIsMissing")
     void call_shouldKeepAuditEvenWhenRawContextIsMissing() {
         when(audits.save(any(ToolCallAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));

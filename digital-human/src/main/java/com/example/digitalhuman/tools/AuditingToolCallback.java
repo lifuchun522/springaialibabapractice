@@ -67,10 +67,22 @@ public class AuditingToolCallback implements ToolCallback {
             audit(toolInput, toolContext, message, ToolCallAudit.Status.TIMEOUT, elapsedMs(startedAt));
             return message;
         } catch (Exception ex) {
-            String message = "工具执行失败：" + ex.getMessage();
+            String message = failureSummary(ex);
             audit(toolInput, toolContext, message, ToolCallAudit.Status.ERROR, elapsedMs(startedAt));
             return message;
         }
+    }
+
+    /**
+     * 异常信息可能为空（远程工具断连时 MCP 客户端就会抛一个没有 message 的异常），
+     * 那时至少要留下异常类型——否则审计里只剩「工具执行失败：null」，等于没留。
+     */
+    private static String failureSummary(Throwable ex) {
+        String detail = ex.getMessage();
+        if (detail == null || detail.isBlank()) {
+            detail = ex.getClass().getName();
+        }
+        return "工具执行失败：" + detail;
     }
 
     private String callWithTimeout(String toolInput, ToolContext toolContext) throws Exception {

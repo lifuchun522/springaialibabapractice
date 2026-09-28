@@ -147,17 +147,20 @@ public class DigitalHumanChatService {
                 .toolContext(toolContext);
     }
 
+    /**
+     * 交给模型的工具集：远程（MCP）与本地只读始终在；本地写工具只在被显式请求时加入。
+     *
+     * <p>远程工具默认挂载，是因为它的能力本来就不属于我们——不挂，模型就永远答不出预约类问题，
+     * 而这类问题在运行页上是用户随手就会问的。
+     */
     private org.springframework.ai.tool.ToolCallback[] toolCallbacks(boolean allowWrite) {
-        if (!allowWrite) {
-            return toolRegistry.readOnly();
+        java.util.List<org.springframework.ai.tool.ToolCallback> all = new java.util.ArrayList<>();
+        all.addAll(java.util.List.of(toolRegistry.readOnly()));
+        all.addAll(java.util.List.of(toolRegistry.remote()));
+        if (allowWrite) {
+            all.addAll(java.util.List.of(toolRegistry.write()));
         }
-        org.springframework.ai.tool.ToolCallback[] readOnly = toolRegistry.readOnly();
-        org.springframework.ai.tool.ToolCallback[] write = toolRegistry.write();
-        org.springframework.ai.tool.ToolCallback[] all =
-                new org.springframework.ai.tool.ToolCallback[readOnly.length + write.length];
-        System.arraycopy(readOnly, 0, all, 0, readOnly.length);
-        System.arraycopy(write, 0, all, readOnly.length, write.length);
-        return all;
+        return all.toArray(org.springframework.ai.tool.ToolCallback[]::new);
     }
 
     private AgentConfig configOf(Long projectId) {

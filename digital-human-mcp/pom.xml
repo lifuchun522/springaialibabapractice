@@ -10,9 +10,9 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>digital-human</artifactId>
-    <name>digital-human</name>
-    <description>数字人项目最小骨架：以 ChatClient 为唯一模型调用出口</description>
+    <artifactId>digital-human-mcp</artifactId>
+    <name>digital-human-mcp</name>
+    <description>展厅预约能力的 MCP Server：独立部署、独立数据、可被多语言调用方消费</description>
 
     <dependencies>
         <dependency>
@@ -24,7 +24,13 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- 第 3 掌：数字人底座要落三张表，表结构由 Flyway 建，Hibernate 只做 validate -->
+        <!-- MCP Server：把这份能力用协议暴露出去，调用方不需要我们的 SDK -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+        </dependency>
+
+        <!-- 它拥有自己的数据：数字人服务没有这张表，想拿数据只能走协议 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -42,37 +48,12 @@
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- 只要 BCrypt，不引入整套 Spring Security（Demo 的令牌方案是自管的） -->
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
-        </dependency>
-
-        <!--
-          模型通道：DeepSeek 走 OpenAI 兼容协议。
-          版本由父 pom 的 spring-ai-bom 管理，此处不写版本号。
-        -->
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-openai</artifactId>
-        </dependency>
-
-        <!--
-          第 7 掌：MCP Client。
-          展厅预约这份能力已拆成独立 MCP Server（digital-human-mcp 模块），
-          这里只做调用方：用 streamable-http 传输远程消费它的工具。
-        -->
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- 测试用内存库：单测要能离线、确定性跑通，不依赖本机 MySQL -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
