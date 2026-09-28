@@ -7,6 +7,7 @@
 不是「跟着敲一遍就完」的示例集合。每掌一条分支、一个 PR、一个 tag，
 外加一份贴着**原始输出**（真实模型返回、数据库查询、日志行）的验收记录。
 
+[![CI](https://github.com/lifuchun522/springaialibabapractice/actions/workflows/ci.yml/badge.svg)](https://github.com/lifuchun522/springaialibabapractice/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![JDK](https://img.shields.io/badge/JDK-21%20LTS-orange.svg)](pom.xml)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.10-6DB33F.svg)](pom.xml)
@@ -33,6 +34,7 @@
 | 7 | MCP Client 连不上时「工具静默为空」 | 实测直接 `McpTransportException`（404 on `/sse`），行为与文章不同 | 记录差异，并把「清单为空」做成启动期 fail-fast |
 | 8 | `similarityThreshold` 控制检索 | 阈值 0 会让「无依据拒答」分支永不触发（得分 0 也会命中） | 向量库宽口径取候选，业务侧另设相关度下限 |
 | 9 | 挂框架的工具重试拦截器 | 工具失败已在工具边界被转成可读结果，外层拦截器**永远不会触发** | 失败策略收归工具边界，不让「配了但不生效」的通道留在代码里 |
+| 9 | Spring AI Alibaba 与 Spring AI 是一套版本 | `agent-framework → graph-core` 依赖 MCP SDK **0.14.0**，而 Spring AI 1.1.2 用 **0.17.0**；enforcer 直接拦下 | 统一到 0.17.0，并用**真实远程工具调用**证明 graph-core 没被拆坏（也解释了第 7 掌的协议差异根因） |
 
 这类记录都写在 `docs/chNN-验收记录.md` 的「核验发现与踩坑」里，而不是藏在提交信息里。
 
@@ -181,7 +183,7 @@ Issue（本章要落的能力与验收标准）
 | 6 | 利涉大川 · 御器工具 | `chapter/06-tools` | `ch06` | ✅ 只读/写分离 + 人类确认门禁 + 工具审计与超时 |
 | 7 | 突如其来 · 通玄 MCP | `chapter/07-mcp` | `ch07` | ✅ 独立 MCP Server + 远程工具发现与调用 |
 | 8 | 震惊百里 · 入藏 RAG | `chapter/08-rag` | `ch08` | ✅ 项目级知识库 + 元数据契约 + 带出处回答与无据拒答 |
-| 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | — | 🚧 事件流 + 模型调用上界 + 工具重试（真实验收中） |
+| 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | `ch09` | ✅ 事件流 + 模型调用硬上界 + 工具边界重试 + 账本随主脑落 |
 | 10 | 双龙取水 · 百阵流程 | `chapter/10-workflow-agents` | — | ⬜ 待做 |
 | 11 | 鱼跃于渊 · 图谱 Graph | `chapter/11-graph-core` | — | ⬜ 待做 |
 | 12 | 时乘六龙 · 分身多 Agent | `chapter/12-multi-agent` | — | ⬜ 待做 |
