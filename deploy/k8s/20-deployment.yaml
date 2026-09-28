@@ -1,0 +1,119 @@
+# 第 18 掌的主角：无状态 Deployment + 三个探针的语义分层 + 无损滚动。
+#
+# 五个完成标准里有四条落在这个文件里。每个字段后面都写了它防的到底是什么故障。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: saa-agent
+  namespace: digital-human
+  labels:
+    app: saa-agent
+    app.kubernetes.io/part-of: digital-human
+spec:
+  replicas: 3
+  # maxUnavailable: 0 —— 「滚动可无损」这条标准就靠它：
+  # 任何时刻可用副本数都不低于期望值，升级期间不出现容量缺口。
+  # 代价是需要临时多一个副本（maxSurge），这也是要留出资源余量的原因。
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  # 回滚抓手：保留历史版本，`kubectl rollout undo` 一条命令回到上一个镜像。
+  # 注意它只回滚**应用版本**；数据库结构由 Flyway 前向迁移，回滚不涉及 schema（第 18 掌第 5 条标准）。
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: saa-agent
+  template:
+    metadata:
+      labels:
+        app: saa-agent
+    spec:
+      # 长连接服务需要更长的终止窗口：K8s 删除 Pod 时会并发摘端点与发 SIGTERM，
+      # 这两件事没有先后保证，preStop 的 sleep 就是用来填这段「摘除还没传播完」的窗口。
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      # 先把流量摘干净、等在途请求收尾，再让进程退出
+      containers:
+        - name: agent
+          image: registry.us-west-1.aliyuncs.com/platweb/public:VERSION
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: saa-agent-config
+            - secretRef:
+                name: saa-agent-secret
+          resources:
+            # requests 决定调度与 HPA 的分母，limits 决定 OOM 与 CPU 节流的边界。
+            # 两者差距不要拉太大：差距越大，HPA 越容易在「实际很忙」时算出很低的利用率。
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          # 三个探针的语义分层，第 18 掌 03 章讲过，这里是它的落地：
+          #
+          # startupProbe：允许慢慢启动。JVM 冷启动 + Flyway 迁移 + 向量索引重建可能要几十秒，
+          #   在它通过之前 liveness 会被抑制——这是「冷启动不被误杀」的正解，
+          #   而不是把 initialDelaySeconds 调大（那是拿所有 Pod 的健康换启动慢）。
+          startupProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+          # readinessProbe：能不能接流量。失败只是从 Service 端点摘除，**不重启进程**。
+          #   它包含 configReadiness + db（第 16 掌的健康分组），所以「没连上依赖」不会被放行。
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # livenessProbe：要不要重启。**只探 /liveness（仅 ping）**——
+          #   把模型 API 或数据库写进 liveness，等于把一个外部故障放大成全集群震荡：
+          #   依赖抖动 → 探针失败 → Pod 重启 → 重启期间又失败 → Deployment 一起躺平。
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                # 不是「让进程多活几秒」这么简单：这段时间里 Service 端点摘除会在各个节点上传播，
+                # 应用侧同时开着 graceful shutdown（server.shutdown=graceful）等在途请求收尾。
+                # 两件事合起来，才让「升级期间 SSE 不被打断」成立。
+                command: ["sh", "-c", "sleep 10"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            # readOnlyRootFilesystem 之后，应用要写日志/临时文件的目录必须显式挂出来，
+            # 否则启动就因为「无法创建 /app/logs」失败——这一条是本掌实测会踩的坑。
+            - name: tmp
+              mountPath: /tmp
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}

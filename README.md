@@ -242,6 +242,9 @@ export DIGITAL_HUMAN_DB_PASSWORD=root
 | 17 | 有了 traceId 就算打通链路 | 同一请求出现**两个号**：响应头/调用树是自己生成的 `a6d63cf3…`，日志里的 `traceId` 却是框架的 `6d5f033b…`——因为 Micrometer 的 correlation 装饰器**也往 MDC 写同一个键**，谁后写谁赢 | 过滤器改为**优先取框架当前 span 的 traceId**（与文章 V1 一致），身份只有一个来源；修后响应头 == 日志 == 审计表 == 调用树 |
 | 17 | 工具审计与日志天然能对上 | `ConversationRequest` 自己生成 12 位随机号当 traceId，而 HTTP 侧用 32 位号：一次请求响应头 `9a3abf6d…`、`tool_call_audit.trace_id` 却是 `c7c2b3418b6c`——**两张表永远 join 不上**，而工具审计是「模型到底调了什么」的唯一真相 | traceId 先继承请求上下文，没有上下文才自生成；断言钉住，修后审计表与响应头同号 |
 | 17 | 埋点加上就有数据 | 失败分类的指标被 **Prometheus 静默丢弃**：同名指标的标签键集合必须一致，只在失败时补 `failure.type` 会让带该标签的 meter 整批作废——只有一行 WARN，业务完全正常 | 建指标时就写 `failure.type=none`，失败时改值不改键；修后 `failure_type="INPUT_INVALID"` 与 `"none"` 都能查 |
+| 18 | 上 K8s 就是「把 replicas 改成 3」 | 记忆原来是**进程内**的：多副本下请求打到 A、会话在 B，用户看到 AI 失忆——这不是部署问题，是状态归属问题 | Memory 改成读 `chat_message` 账本（`store=jdbc`）：两个实例共享同一段历史，Pod 才真的无状态 |
+| 18 | 探针随便配一个 `/actuator/health` 就行 | 三类探针语义完全不同：把依赖写进 liveness，一次模型超时就会**连锁重启**整个 Deployment；readiness 失败只该摘端点、不该重启 | liveness 只探 `/liveness`（仅 ping）；readiness 探含配置与数据库的 `/readiness`；冷启动用 startupProbe 而不是放大 initialDelay |
+| 18 | compose 能起，K8s 也能起 | 只读根文件系统一开，应用连日志目录都建不了（`/app/logs`）；容器里 `host.docker.internal` 还不解析（报 `UnknownHostException`，看起来却像「启动失败」） | 镜像内预建并 chown `/app/logs`，清单里挂 emptyDir；`--add-host=host.docker.internal:host-gateway`；读日志先看第一段 `Caused by` |
 | 17 | 失败请求一定有痕迹 | 项目不存在/入参非法这类**早失败在业务埋点之前就抛了**，诊断面上是一棵空树；补了 http 层之后它的分类仍是空的——因为 `@ExceptionHandler` 在 Servlet 内部就把异常转成了响应，过滤器看不到异常 | 过滤器给整个请求加 http 层调用，并**按响应状态码分类**（HTTP 层的事实本来就是状态码）；早失败也留下一棵带 `INPUT_INVALID` 的树 |
 
 
@@ -401,7 +404,7 @@ MCP_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human_ext?...' ./mvnw -pl digit
 | 15 | 龙战于野 · 试炼评测 | `chapter/15-eval-guard` | `ch15` | ✅ 五层测试（L1 单元 / L2 MockWebServer 打桩 / L3 Testcontainers / L4 快照重放 / L5 在线评测）+ 六类回归集 24 条 + Judge 校准（[文章](https://cloud.tencent.com/developer/article/2752089)） |
 | 16 | 履霜冰至 · 立派服务 | `chapter/16-spring-service` | `ch16` | ✅ 依赖方向门禁（ArchUnit 6 条）+ 启动期部署契约 + 健康分组（liveness / readiness）+ SSE 心跳与有界异步执行器 + 生产边界（`/internal/llm/v1` 在 prod 下 404）+ 可执行接口契约（[文章](https://cloud.tencent.com/developer/article/2752087)） |
 | 17 | 羝羊触藩 · 观星治理 | `chapter/17-observability-admin` | `ch17` | ✅ 身份四元组贯穿（traceId/projectId/sessionId/threadId）+ 跨线程池与跨进程传播 + http/model/tool/rag 四层调用树 + 九类失败分类 + 诊断接口与 Prometheus 指标（[文章](https://cloud.tencent.com/developer/article/2752086)） |
-| 18 | 神龙摆尾 · 登云 K8s | `chapter/18-k8s-production` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752084)与视频已发布） |
+| 18 | 神龙摆尾 · 登云 K8s | `chapter/18-k8s-production` | `ch18` | ✅ 非 root 镜像（uid 10001 + 容器感知堆）+ 三类探针语义分层 + 状态外置（Memory 走账本）+ `maxUnavailable: 0` 与优雅退出（SIGTERM 下在途流式答完）+ 全套 K8s 清单与结构校验（[文章](https://cloud.tencent.com/developer/article/2752084)） |
 | 19 | 震雷百里 · 数字人功能升级 | `chapter/19-digital-human-upgrade` | — | 🚧 图与方案已就绪（[ch19 文档](docs/ch19-数字人功能升级.md)、[OpenSpec 变更](openspec/changes/ch19-digital-human-upgrade/)）：五组件入图（livekit-server / livekit-agent / tts / asr / nacos）+ 三条链路 + 主流程五步；Nacos 与 TTS/ASR 的实现待第二步 |
 
 ### 交付方式：Issue → 分支 → PR → main → tag

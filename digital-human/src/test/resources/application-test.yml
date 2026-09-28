@@ -25,6 +25,10 @@ spring:
         enabled: false
 
 digital-human:
+  memory:
+    # 单测用进程内记忆：跑得快、与库无关。库实现有它自己的用例
+    # （LedgerChatMemoryRepositoryTest），两条路径都覆盖到了。
+    store: in-memory
   chat:
     default-system: 你是一个专业的数字人主播，回答简洁友好。
   mcp:

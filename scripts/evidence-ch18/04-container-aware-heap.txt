@@ -1,0 +1,5 @@
+﻿容器内存上限        : 1024 MiB
+JVM 堆上限(area=heap): 768 MiB
+非堆上限            : 1264 MiB
+MaxRAMPercentage    : 75%
+结论                : 堆上限 ≈ 上限 × 75% 时说明 JVM 读到了 cgroup 限制（容器感知生效）
