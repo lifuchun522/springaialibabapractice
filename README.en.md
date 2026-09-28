@@ -197,7 +197,7 @@ from the tag itself.
 | 8 | 震惊百里 · RAG | `chapter/08-rag` | `ch08` | ✅ Per-project KB + metadata contract + cited answers, refusal without basis |
 | 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | `ch09` | ✅ Event stream + hard model-call cap + tool-boundary retry + ledger |
 | 10 | 双龙取水 · Workflows | `chapter/10-workflow-agents` | `ch10` | ✅ Four flow-agent patterns + node-level tracing (timings, emissions, sequence) |
-| 11 | 鱼跃于渊 · Graph core | `chapter/11-graph-core` | — | ⬜ Planned |
+| 11 | 鱼跃于渊 · Graph core | `chapter/11-graph-core` | `ch11` | ✅ State graph + explicit reduction strategies + interrupt + MySQL checkpoints (survives restart) |
 | 12 | 时乘六龙 · Multi-agent | `chapter/12-multi-agent` | — | ⬜ Planned |
 | 13 | 密云不雨 · A2A | `chapter/13-a2a-nacos` | — | ⬜ Planned |
 | 14 | 损则有孚 · Source PR | `chapter/14-source-pr` | — | ⬜ Planned |
