@@ -126,7 +126,7 @@ git -C <wiki-clone> add -A && git -C <wiki-clone> commit -m "docs(wiki): 同步�
 | 5 | 潜龙勿用 · 藏忆流式 | `chapter/05-memory-streaming` | `ch05` | 已合入 main：会话记忆 + SSE 流式 + 消息账本 |
 | 6 | 利涉大川 · 御器工具 | `chapter/06-tools` | `ch06` | 已合入 main：只读/写工具分离 + 人类确认门禁 + 工具审计与超时 |
 | 7 | 突如其来 · 通玄 MCP | `chapter/07-mcp` | `ch07` | 已合入 main：独立 MCP Server（展厅预约）+ MCP Client 远程发现与调用 |
-| 8 | 震惊百里 · 入藏 RAG | `chapter/08-rag` | — | 待做 |
+| 8 | 震惊百里 · 入藏 RAG | `chapter/08-rag` | `ch08` | 已合入 main：项目级知识库 + 元数据契约 + 过滤检索 + 带出处回答与无据拒答 |
 | 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | — | 待做 |
 | 10 | 双龙取水 · 百阵流程 | `chapter/10-workflow-agents` | — | 待做 |
 | 11 | 鱼跃于渊 · 图谱 Graph | `chapter/11-graph-core` | — | 待做 |
