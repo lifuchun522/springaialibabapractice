@@ -1,0 +1,20 @@
+# 第 18 掌：数字人应用在 Kubernetes 上的全套编排。
+#
+# 这一份清单要解决的是「本地 compose 跑得欢，一上 K8s 长连接全断、会话全丢」，
+# 所以每个字段都不是仪式，对应一个真实故障，注释里写清了它防的是什么。
+#
+# 应用顺序（都在本目录下）：
+#   kubectl apply -f 00-namespace.yaml
+#   kubectl apply -f 10-config.yaml -f 11-secret.example.yaml   # 先把 secret 换成真实值
+#   kubectl apply -f 20-deployment.yaml -f 21-service.yaml -f 22-ingress.yaml
+#   kubectl apply -f 30-hpa.yaml -f 31-pdb.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: digital-human
+  labels:
+    app.kubernetes.io/part-of: digital-human
+    # 用 PodSecurity 的 restricted 档位：非 root、不挂特权、只读根文件系统的要求由此强制
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

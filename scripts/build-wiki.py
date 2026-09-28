@@ -52,6 +52,7 @@ CHAPTERS = [
     (15, "龙战于野", "试炼评测", "chapter/15-eval-guard", "ch15", 51, "2752089", "87782"),
     (16, "履霜冰至", "立派服务", "chapter/16-spring-service", "ch16", 53, "2752087", "87781"),
     (17, "羝羊触藩", "观星治理", "chapter/17-observability-admin", "ch17", 55, "2752086", "87797"),
+    (18, "神龙摆尾", "登云K8s", "chapter/18-k8s-production", "ch18", 0, "2752084", "87795"),
 ]
 
 # 第 13～18 掌文章与视频都已发布，但配套代码与验收记录要等章节落地：只进 Home 的
@@ -83,6 +84,7 @@ DELIVERED = {
     15: "五层测试与六类回归集：L2 把 mock 边界从 ChatModel 撤到 HTTP 层（断言我们发出去的请求）；L3 Testcontainers 起真实 MySQL；L4 真实输出快照重放；L5 真实模型在线评测并落可追溯记录（数据集版本/模型/时间/明细）+ Judge 校准 6/6",
     16: "立派服务：依赖方向门禁（ArchUnit 6 条）+ 启动期部署契约（缺密钥即启动失败并点名环境变量）+ 健康分组（liveness 只含 ping / readiness 含 configReadiness+db）+ SSE 心跳与有界异步执行器 + 生产边界（/internal/llm/v1 在 prod 下 404）+ 可执行接口契约",
     17: "观星治理：身份四元组贯穿全链路（traceId/projectId/sessionId/threadId）+ 跨线程池与跨进程传播 + http/model/tool/rag 四层调用树（带耗时与失败分类）+ 九类失败分类与 Prometheus 聚合 + 诊断接口 /api/diagnostics/traces/{id}",
+    18: "登云 K8s：非 root 镜像（uid 10001、容器感知堆）+ 三类探针语义分层（liveness 只含 ping）+ 状态外置（Memory 读 chat_message 账本，多副本共享）+ maxUnavailable:0 与优雅退出（SIGTERM 下在途流式完整答完）+ Deployment/Service/Ingress(SSE 关缓冲)/HPA/PDB 清单 + 结构校验脚本",
 }
 
 OUTSTANDING = {
@@ -103,6 +105,7 @@ OUTSTANDING = {
     15: "Judge 的定期校准节奏未建立；Multi-Agent 路径类用例仍以人工抽样为主；A2A 跨域评测未容器化；无依据拒答分支在当前配置下走不到（pk-003 持续失败）；评测趋势未落库",
     16: "LiveKit 实时语音未接（承接第 3 掌）；契约描述未引生成器（无 OpenAPI 文档）；K8s 探针与清单留给第 18 掌；健康检查不覆盖「模型是否真的可达」；Tool/RAG/Graph 只搬进层里，索引加载时机未收口",
     17: "Admin 未接入（用本地调用树 + Prometheus + 诊断接口替代，是遗留不是等价）；OTLP 无 collector（导出失败可见，端到端未验证）；A2A 与 Graph 节点未统一进调用树；诊断缓冲只在内存（重启即空）；无按环境分层的采样策略",
+    18: "本环境没有 K8s 集群：apply/rollout/undo/HPA/PDB/Ingress 只做结构校验，未在真集群验证；流水线没有 kubectl set image 这一步；HPA 按 CPU 而非连接数扩缩；多副本端到端会话连续性只验到仓储层；迁移写错的恢复流程未演练",
 }
 
 

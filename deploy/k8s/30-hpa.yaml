@@ -1,0 +1,43 @@
+# HPA：按 CPU 扩缩。它的正确性依赖两件事，写在这里免得被改坏：
+#   1. Deployment 里必须有 resources.requests.cpu —— HPA 的利用率是「实际 / 请求」，
+#      没有 requests 就算不出百分比，HPA 会一直显示 unknown 而不扩容；
+#   2. 应用必须真的能多副本运行（状态已外置），否则扩容只会放大串会话的问题。
+#
+# 为什么用 CPU 而不是「并发连接数」：SSE 的并发由连接数决定，而连接数指标要额外接
+# Prometheus Adapter 才能作为 HPA 指标。CPU 是零额外依赖的起点；等第 17 掌的指标
+# 接上适配器后，再换成按 genai_chat_seconds_count 速率扩缩会更准（记为遗留）。
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: saa-agent
+  namespace: digital-human
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: saa-agent
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleUp:
+      # 扩容要快：模型调用是长尾，排队会直接把延迟叠上去
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+    scaleDown:
+      # 缩容要慢：一个 Pod 上可能挂着若干条长连接，缩太快就是批量断流。
+      # 5 分钟窗口 + 每次最多减一个，配合 preStop 与 graceful shutdown 才不伤用户。
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60

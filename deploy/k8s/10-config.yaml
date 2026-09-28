@@ -1,0 +1,26 @@
+# 非机密配置：全部是「有安全默认值」的项。
+#
+# 与 Secret 的分界就是第 16 掌那条判据：**缺了也能正确运行**的进 ConfigMap，
+# 缺了只能失败（凭据、密钥）的进 Secret。放错位置比缺失更危险——
+# 它会让一个密钥以为自己在 Secret 里，实际躺在版本库的 ConfigMap 里。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: saa-agent-config
+  namespace: digital-human
+data:
+  # 模型通道（非凭据部分）
+  DEEPSEEK_BASE_URL: "https://api.deepseek.com"
+  DEEPSEEK_MODEL: "deepseek-flash"
+  # 数据源：生产用托管 MySQL，地址由环境决定
+  DIGITAL_HUMAN_DB_URL: "jdbc:mysql://mysql.digital-human.svc.cluster.local:3306/digital_human?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai"
+  DIGITAL_HUMAN_DB_USER: "digital_human"
+  # 第 18 掌的核心开关之一：记忆放账本里（多副本共享），而不是 Pod 内存
+  DIGITAL_HUMAN_MEMORY_STORE: "jdbc"
+  # MCP Server：同命名空间内直连服务名
+  MCP_SERVER_URL: "http://digital-human-mcp:8081"
+  # 灰度/多环境：同一个镜像靠这些变量切换，不改代码不重建镜像（第 16 掌的交付标准）
+  TRACING_SAMPLING_PROBABILITY: "0.1"
+  OTLP_TRACING_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4318/v1/traces"
+  # 关闭内网无鉴权入口（prod profile 已经把它从 Bean 里摘掉，这里是双保险）
+  SPRING_PROFILES_ACTIVE: "prod"

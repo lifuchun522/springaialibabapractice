@@ -1,0 +1,26 @@
+# Service：只做「把 Pod 变成稳定端点」这一件事。
+#
+# 关于会话亲和（sessionAffinity）：本服务**不需要**它，因为状态已经外置
+# （记忆在 chat_message、图检查点在 MySQL、会话键是 conversationId 三层键）。
+# 一条 SSE 流在建立时就绑在某个 Pod 上，天然是亲和的；流结束后的新请求打到哪个 Pod 都无所谓。
+#
+# 反过来说：如果哪天有状态放不回外部存储（例如只有本地磁盘才有的大文件），
+# 那就该用 ClientIP 亲和或专门的连接网关，而不是假装它无状态——第 18 掌 04 章这条边界要留着。
+apiVersion: v1
+kind: Service
+metadata:
+  name: saa-agent
+  namespace: digital-human
+  labels:
+    app: saa-agent
+spec:
+  type: ClusterIP
+  selector:
+    app: saa-agent
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  # 只把「就绪」的 Pod 放进端点：readiness 没过的实例绝不接流量（探针语义在这里生效）
+  publishNotReadyAddresses: false

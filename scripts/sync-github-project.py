@@ -75,7 +75,8 @@ CHAPTERS = [
      "+ 生产边界（/internal/llm/v1 在 prod 下 404）+ 可执行接口契约；离线用例 133→157"),
     (17, "羝羊触藩", "观星治理", "chapter/17-observability-admin", "ch17", 55, "Done",
      "身份四元组贯穿（traceId/projectId/sessionId/threadId）+ 跨线程池与跨进程传播 + http/model/tool/rag 四层调用树 + 九类失败分类 + 诊断接口与 Prometheus 指标；离线用例 157→182"),
-    (18, "神龙摆尾", "登云 K8s", "chapter/18-k8s-production", None, None, "Backlog", "待做"),
+    (18, "神龙摆尾", "登云 K8s", "chapter/18-k8s-production", "ch18", 0, "Done",
+     "非 root 镜像（uid 10001 + 容器感知堆）+ 三类探针语义分层 + 状态外置（Memory 走账本，多副本不失忆）+ maxUnavailable:0 与优雅退出（SIGTERM 下在途流式答完）+ 全套 K8s 清单与结构校验；离线用例 182→187"),
 ]
 
 

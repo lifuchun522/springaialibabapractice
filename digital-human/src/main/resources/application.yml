@@ -1,7 +1,14 @@
 server:
   port: 8080
+  # 第 18 掌：K8s 删除 Pod 时会并发做两件事——把 Pod 从 Service 端点摘除、给容器发 SIGTERM。
+  # 这两件事没有先后保证；进程若收到信号就立刻退出，摘除还在传播，新请求就会打到已退出的进程上。
+  # graceful + 下面的 preStop（见 deploy/k8s/deployment.yaml）一起把这段窗口填掉。
+  shutdown: graceful
 
 spring:
+  lifecycle:
+    # 优雅退出最多等多久：要大于一条流式回答的收尾时间，又不能超过 terminationGracePeriodSeconds
+    timeout-per-shutdown-phase: 30s
   application:
     name: digital-human
   datasource:
@@ -76,6 +83,10 @@ digital-human:
   memory:
     # 模型短期看多少条消息（投影，可丢可重建）；产品历史另有 chat_message 账本
     max-messages: 20
+    # 第 18 掌：记忆放哪里。jdbc = 账本（chat_message），多副本可共享，Pod 无状态；
+    # in-memory = 进程内（只适合单副本/测试）。默认 jdbc —— 别让「单副本下看不出问题」
+    # 的默认值把多副本上线坑了。
+    store: ${DIGITAL_HUMAN_MEMORY_STORE:jdbc}
   tools:
     # 工具执行时间上限：下游卡住不能把整个对话线程拖死
     timeout-ms: 3000

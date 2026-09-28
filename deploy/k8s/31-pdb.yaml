@@ -1,0 +1,20 @@
+# PodDisruptionBudget：自愿中断（节点排空、集群升级、缩容）时保证可用副本下限。
+#
+# 它不是 HPA 的复制品，防的是另一件事：
+#   - HPA 管「负载」引起的扩缩；
+#   - PDB 管「运维动作」引起的中断——kubectl drain 一个节点时，如果 3 个副本里有 2 个在上面，
+#     没有 PDB 就会同时被驱逐，服务瞬断；有 PDB 时 API Server 会一个一个来。
+#
+# minAvailable: 2 与 Deployment 的 maxUnavailable: 0 是一对：
+# 前者保「任意时刻至少两个可用」，后者保「滚动升级期间不减容」。两者都用绝对值而不是百分比，
+# 因为副本数少（3）时百分比会把「25%」算成 0.75 这种语义模糊的值。
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: saa-agent
+  namespace: digital-human
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: saa-agent

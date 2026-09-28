@@ -1,0 +1,39 @@
+# Ingress：SSE 能不能活着穿过网关，八成取决于这几个注解。
+#
+# 第 16 掌在服务端加了心跳、第 18 掌把连接推到集群外——但**流式是跨层契约，后端一个人保证不了**：
+#   - proxy-buffering off    ：网关一旦缓冲响应，逐字的流就变成「一次性吐出来」，也就是假流式；
+#   - proxy-read-timeout     ：默认 60s 会把长连接掐断，而 Agent 多轮工具调用很容易超过它；
+#   - proxy-send-timeout     ：同上，作用于上行；
+#   - proxy-http-version 1.1 ：HTTP/1.0 不支持分块传输，流式会被整段缓冲。
+#
+# 注解名以 NGINX Ingress Controller 为准；换厂商（ALB/Traefik/云厂商网关）时，
+# 要按各自文档找等价开关——**判据不变**：关缓冲、放大空闲超时、保持 1.1 以上。
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: saa-agent
+  namespace: digital-human
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    # 滚动升级期间保持连接：Ingress 侧不要做「连接一断就重试到别处」的激进策略，
+    # 那会让用户在升级瞬间看到上下文错乱（重试到了新 Pod，但会话历史在库里是一致的，
+    # 所以这里主要是避免重复提交造成重复扣费/重复调用模型）。
+    nginx.ingress.kubernetes.io/proxy-next-upstream: "off"
+    # 上传知识文档的大小上限（第 8 掌的入库接口）
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: saa-agent.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: saa-agent
+                port:
+                  number: 80

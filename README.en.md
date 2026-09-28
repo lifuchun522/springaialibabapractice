@@ -471,7 +471,7 @@ Startup logs should show `MCP 远程工具已发现 1 个：showroom_query_avail
 | 15 | 龙战于野 · Evaluation | `chapter/15-eval-guard` | `ch15` | ✅ Five test layers (L1 unit / L2 MockWebServer at the HTTP boundary / L3 Testcontainers / L4 snapshot replay / L5 live evaluation) + six regression suites, 24 cases + judge calibration ([article](https://cloud.tencent.com/developer/article/2752089)) |
 | 16 | 履霜冰至 · Service | `chapter/16-spring-service` | `ch16` | ✅ Dependency-direction gate (6 ArchUnit rules) + startup deployment contract + health groups (liveness / readiness) + SSE heartbeat with a bounded async executor + production boundary (`/internal/llm/v1` is 404 under prod) + executable API contract ([article](https://cloud.tencent.com/developer/article/2752087)) |
 | 17 | 羝羊触藩 · Observability | `chapter/17-observability-admin` | `ch17` | ✅ Identity quad end to end (traceId/projectId/sessionId/threadId) + cross-thread and cross-process propagation + a four-layer call tree (http/model/tool/rag) + nine failure categories + diagnostics endpoint and Prometheus metrics ([article](https://cloud.tencent.com/developer/article/2752086)) |
-| 18 | 神龙摆尾 · K8s | `chapter/18-k8s-production` | — | ⬜ Planned ([article](https://cloud.tencent.com/developer/article/2752084) and video already published) |
+| 18 | 神龙摆尾 · K8s | `chapter/18-k8s-production` | `ch18` | ✅ Non-root image (uid 10001 + container-aware heap) + probe semantics split three ways + externalized state (memory reads the ledger) + `maxUnavailable: 0` with graceful shutdown (an in-flight stream answered in full under SIGTERM) + K8s manifests with structural validation ([article](https://cloud.tencent.com/developer/article/2752084)) |
 
 ### Delivery flow: issue → branch → PR → main → tag
 
