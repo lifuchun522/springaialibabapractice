@@ -1,0 +1,1 @@
+{"name":"knowledge-agent","description":"项目知识 Agent：多轮澄清 + 检索 + 组织成一段可讲解的答案（不是纯检索工具）","version":"1.0","url":"http://127.0.0.1:8082","skills":[{"id":"knowledge-qa","name":"项目知识问答","description":"基于本服务已索引的文档回答，命中不足时明确说明资料里没有"}],"capabilities":{"streaming":true,"taskLifecycle":true}}
