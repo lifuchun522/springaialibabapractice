@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.example.digitalhuman.ai.ModelInvocationException;
 import com.example.digitalhuman.ai.ModelRoutingException;
 import com.example.digitalhuman.service.AuthenticationFailedException;
+import com.example.digitalhuman.service.ConfirmationRejectedException;
 import com.example.digitalhuman.service.ConversationBusyException;
 import com.example.digitalhuman.service.ResourceNotFoundException;
 import com.example.digitalhuman.service.UsernameExistsException;
@@ -49,6 +50,13 @@ public class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleRouting(ModelRoutingException ex) {
         return Map.of("error", ex.getMessage(), "type", "MODEL_NOT_CONFIGURED");
+    }
+
+    /** 确认令牌无效或已使用：写操作一律拒绝，并明确说明没有产生数据变更。 */
+    @ExceptionHandler(ConfirmationRejectedException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleConfirmation(ConfirmationRejectedException ex) {
+        return Map.of("error", ex.getMessage(), "type", "CONFIRMATION_REJECTED");
     }
 
     /** 同一会话已有在途请求：窗口是有序状态，宁可拒绝也不并发写。 */

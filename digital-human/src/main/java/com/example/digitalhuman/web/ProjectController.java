@@ -20,6 +20,7 @@ import com.example.digitalhuman.domain.AgentConfig;
 import com.example.digitalhuman.domain.DigitalHumanProject;
 import com.example.digitalhuman.service.AuthService;
 import com.example.digitalhuman.service.ProjectService;
+import com.example.digitalhuman.service.TitleChangeService;
 
 /** 数字人项目 CRUD 与运行页配置读取。 */
 @RestController
@@ -28,10 +29,13 @@ public class ProjectController {
 
     private final AuthService authService;
     private final ProjectService projectService;
+    private final TitleChangeService titleChangeService;
 
-    public ProjectController(AuthService authService, ProjectService projectService) {
+    public ProjectController(AuthService authService, ProjectService projectService,
+                             TitleChangeService titleChangeService) {
         this.authService = authService;
         this.projectService = projectService;
+        this.titleChangeService = titleChangeService;
     }
 
     public record ProjectRequest(String name,
@@ -129,6 +133,15 @@ public class ProjectController {
                                String systemPrompt,
                                java.math.BigDecimal temperature,
                                Integer maxTokens) {
+    }
+
+    /** 人类确认入口：把「待确认变更」真正落库。令牌单次有效，重复使用会被拒绝。 */
+    @PostMapping("/{id}/pending-changes/{token}/confirm")
+    public ProjectResponse confirmTitleChange(@RequestHeader("X-Token") String token,
+                                              @PathVariable Long id,
+                                              @PathVariable("token") String confirmToken) {
+        Long ownerId = authService.requireUserId(token);
+        return ProjectResponse.of(titleChangeService.confirm(id, ownerId, confirmToken));
     }
 
     /** 改人设与模型：只动数据，不动代码，也不重启服务。 */

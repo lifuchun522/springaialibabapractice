@@ -48,6 +48,10 @@ digital-human:
   memory:
     # 模型短期看多少条消息（投影，可丢可重建）；产品历史另有 chat_message 账本
     max-messages: 20
+  tools:
+    # 工具执行时间上限：下游卡住不能把整个对话线程拖死
+    timeout-ms: 3000
+    pool-size: 4
   # 模型目录：有哪些 provider、每个 provider 下有哪些模型，全部是配置。
   # agent_config.provider / model 必须命中这里，否则改配置时直接 400、启动期也不会带病运行。
   models:
