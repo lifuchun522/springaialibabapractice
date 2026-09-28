@@ -15,22 +15,41 @@
 | 模型 | DashScope，默认 `qwen-plus` |
 | 构建 | Maven 3.9+（`mvn -B -ntp test`） |
 
-## 运行
+## 模型通道
+
+业务代码只依赖 `ChatClient`，换模型通道是改配置，不是改代码。
+
+| 通道 | 配置 | 环境变量 | 说明 |
+|------|------|----------|------|
+| DashScope（系列基线） | 默认 | `AI_DASHSCOPE_API_KEY` | 模型 `qwen-plus` |
+| DeepSeek（OpenAI 兼容） | profile `deepseek` | `DEEPSEEK_API_KEY` | 模型 `deepseek-flash`，基址 `https://api.deepseek.com` |
 
 ```bash
-# 密钥只从环境变量注入，不写进仓库
+# 通道一：DashScope（默认）
 export AI_DASHSCOPE_API_KEY=sk-xxxx
-
 mvn -pl digital-human spring-boot:run
+
+# 通道二：DeepSeek（不需要 DashScope 密钥，profile 已关掉整套 DashScope 自动装配）
+export DEEPSEEK_API_KEY=sk-xxxx
+mvn -pl digital-human spring-boot:run -Dspring-boot.run.profiles=deepseek
+
+# 两个通道的调用方式完全相同
 curl "http://localhost:8080/api/chat?q=用一句话介绍你自己"
 ```
 
-无密钥时**无法启动**：DashScope 自动配置会在启动期就报 `DashScope API key must be set`。
-这是刻意的启动期校验——密钥不对就不要让服务假装健康地跑起来。跑测试不受影响（测试用假 Key，不发起真实调用）：
+无有效密钥时**无法启动**：模型 SDK 会在启动期就断言 api-key 非空（`DashScope API key must be set` /
+`OpenAI API key must be set`）。这是刻意的启动期校验——密钥不对，就不要让服务假装健康地跑起来。
+跑测试不受影响（测试注入假 Key，不发起真实调用）：
 
 ```bash
 mvn -B -ntp test
 ```
+
+## 密钥规范
+
+- 真实密钥**只走环境变量**，或放在本地 `.env.local` / `application-local.yml`（均已在 `.gitignore` 中）。
+- 仓库里只允许出现 `.env.example` 这类占位文件，值一律是 `sk-xxxx`。
+- 提交前自查：`git diff --cached | findstr sk-`，出现真实 Key 就不要提交。
 
 ## 模块与章节进度
 
