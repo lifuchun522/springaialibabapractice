@@ -89,4 +89,4 @@ Artifact: spring-ai-alibaba-agent-framework:1.1.2.2（Maven Central sources jar�
   如果 main 的改法就是最终答案，**本 Issue 可以只作为「顺序契约需要写进文档」的请求**——
   因为 1.1.2.2 是当前稳定版，使用者读不到 main 的这行注释。
 - 复算方式：本仓库 `scripts/locate-source.ps1`（从 Maven Central 下 `*-sources.jar` 并输出
-  `模块@版本 文件:行号`），证据在 `evidence-ch14/`。
+  `模块@版本 文件:行号`），证据在 `scripts/evidence-ch14/`。
