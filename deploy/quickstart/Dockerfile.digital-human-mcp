@@ -1,0 +1,40 @@
+# MCP Server 的一键启动构建文件。结构与 Dockerfile.digital-human 相同：
+# 编译阶段从源码打包，运行阶段只留 JRE。
+# 两个 ARG 都必须声明在第一个 FROM 之前（全局构建参数），见该文件的说明。
+ARG BUILD_IMAGE=maven:3.9-eclipse-temurin-21
+ARG RUNTIME_IMAGE=eclipse-temurin:21-jre-alpine
+
+FROM ${BUILD_IMAGE} AS build
+
+WORKDIR /src
+
+# 父 POM 与每个 module 的 POM 都要在（Maven 会读所有 module 的 pom.xml，
+# 少一个就报 Child module ... does not exist），理由见 Dockerfile.digital-human。
+COPY pom.xml ./
+COPY digital-human/pom.xml digital-human/
+COPY digital-human-mcp/pom.xml digital-human-mcp/
+COPY knowledge-agent/pom.xml knowledge-agent/
+RUN mvn -B -ntp -pl digital-human-mcp -am dependency:go-offline
+
+COPY digital-human-mcp/src digital-human-mcp/src
+RUN mvn -B -ntp -pl digital-human-mcp -am -DskipTests package
+
+# ---------------- 运行阶段 ----------------
+FROM ${RUNTIME_IMAGE}
+
+ENV TZ=Asia/Shanghai \
+    LANG=C.UTF-8 \
+    JAVA_OPTS="-XX:MaxRAMPercentage=75 -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
+
+WORKDIR /app
+
+RUN addgroup -S app 2>/dev/null || true \
+ && adduser -S app -G app 2>/dev/null || true
+
+COPY --from=build /src/digital-human-mcp/target/*.jar /app/app.jar
+RUN chown -R app:app /app
+USER app
+
+EXPOSE 8081
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

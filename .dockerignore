@@ -1,0 +1,25 @@
+# 一键启动用的构建上下文忽略表：只把构建真正需要的东西发给 Docker。
+# 不加这张表，.git 与两个 target/ 会被一起打包，构建上下文轻松上到几百 MB。
+#
+# 注意：父 POM 声明了几个 module，Maven 就会尝试读这几个 module 的 pom.xml，
+# 少一个就直接失败（实测：Child module /src/knowledge-agent of /src/pom.xml does not exist）。
+# 所以下面用「排除子目录、再把各模块的 pom.xml 放回来」的方式，
+# 新增模块时不用改这张表；docs/deploy 等目录里的 pom 不会被放回来（不影响构建）。
+.git
+.github
+target
+**/target
+docs/**
+evidence-ch09/**
+evidence-ch10/**
+evidence-ch11/**
+evidence-ch12/**
+deploy/**
+*.log
+*.md
+.env
+.env.*
+!.env.example
+!docs/
+!deploy/
+!*/pom.xml

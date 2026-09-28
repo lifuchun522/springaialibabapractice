@@ -1,0 +1,104 @@
+# 一键启动：从源码构建并把整个数字人（应用 + MCP Server + MySQL）在本机跑起来。
+#
+#   cd deploy
+#   DEEPSEEK_API_KEY=sk-xxxx docker compose -f docker-compose.quickstart.yml up -d --build
+#
+# 起来之后：
+#   浏览器打开 http://localhost:8080/run/1   ← 运行页（第 3 掌那张页面）
+#   MCP Server 在 http://localhost:8081/mcp  ← 第 7 掌拆出去的那个独立进程
+#
+# 与 docker-compose.yml 的区别（两份文件不要混用）：
+#   docker-compose.yml            用**已构建好的镜像**部署（CI 推镜像 → 服务器 up -d），数据库在生产侧；
+#   docker-compose.quickstart.yml 本机体验用：镜像在这里从源码构建，MySQL 一起起，密钥从环境变量进来。
+#
+# 不需要 JDK、不需要 Maven、不需要先手动建库：构建和 Flyway 迁移都在容器里完成。
+
+services:
+  # 本机体验用的 MySQL：两个库由 deploy/init-db.sql 建，表由两个应用的 Flyway 建
+  mysql:
+    image: mysql:8.0
+    container_name: dh-quick-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${QUICK_DB_PASSWORD:-root}
+      MYSQL_DATABASE: digital_human
+    volumes:
+      - quick-mysql-data:/var/lib/mysql
+      # MySQL 官方镜像只在数据卷为空时执行这个目录下的脚本 → 天然「首次启动才跑」
+      - ./init-db.sql:/docker-entrypoint-initdb.d/10-init-db.sql:ro
+    ports:
+      # 只暴露到本机，避免把开发库放到局域网上
+      - "127.0.0.1:${QUICK_DB_PORT:-3307}:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  digital-human-mcp:
+    build:
+      # 构建上下文是仓库根目录：镜像里要从源码编译，需要父 POM 与被构建的模块
+      context: ..
+      dockerfile: deploy/quickstart/Dockerfile.digital-human-mcp
+      args:
+        BUILD_IMAGE: ${BUILD_IMAGE:-maven:3.9-eclipse-temurin-21}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:21-jre-alpine}
+    image: saa-quickstart/digital-human-mcp:local
+    container_name: dh-quick-mcp
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Shanghai
+      # 独立库：不与主应用共用 schema
+      MCP_DB_URL: jdbc:mysql://mysql:3306/digital_human_ext?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      MCP_DB_USER: root
+      MCP_DB_PASSWORD: ${QUICK_DB_PASSWORD:-root}
+    ports:
+      - "${QUICK_MCP_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  digital-human:
+    build:
+      context: ..
+      dockerfile: deploy/quickstart/Dockerfile.digital-human
+      args:
+        BUILD_IMAGE: ${BUILD_IMAGE:-maven:3.9-eclipse-temurin-21}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:21-jre-alpine}
+    image: saa-quickstart/digital-human:local
+    container_name: dh-quick-app
+    restart: unless-stopped
+    depends_on:
+      # 等 MCP Server 健康再起：第 7 掌起工具清单为空会 fail-fast，抢跑只会白失败一次
+      digital-human-mcp:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Shanghai
+      DIGITAL_HUMAN_DB_URL: jdbc:mysql://mysql:3306/digital_human?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      DIGITAL_HUMAN_DB_USER: root
+      DIGITAL_HUMAN_DB_PASSWORD: ${QUICK_DB_PASSWORD:-root}
+      # 模型密钥只从环境变量进来，不进镜像、不进仓库
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?请先设置 DEEPSEEK_API_KEY，例如：DEEPSEEK_API_KEY=sk-xxxx docker compose -f docker-compose.quickstart.yml up -d --build}
+      # 容器内直连服务名，不走宿主机端口
+      MCP_SERVER_URL: http://digital-human-mcp:8081
+    ports:
+      - "${QUICK_APP_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+volumes:
+  quick-mysql-data:

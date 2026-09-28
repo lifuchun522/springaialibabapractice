@@ -17,27 +17,53 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.10-6DB33F.svg)](pom.xml)
 [![Spring AI](https://img.shields.io/badge/Spring%20AI-1.1.2-6DB33F.svg)](pom.xml)
 [![Spring AI Alibaba](https://img.shields.io/badge/Spring%20AI%20Alibaba-1.1.2.2-FF6A00.svg)](pom.xml)
-[![Tests](https://img.shields.io/badge/tests-offline%20%26%20no%20keys-brightgreen.svg)](#六一分钟跑起来)
+[![Tests](https://img.shields.io/badge/tests-offline%20%26%20no%20keys-brightgreen.svg)](#七一键启动docker-compose-一条命令)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](.github/pull_request_template.md)
 
 [简体中文](README.md) · [English](README.en.md)
 
-[为什么是现在](#一为什么是现在热的不是模型是框架) · [怎么读](#四三条阅读路线别按顺序硬啃) · [18 掌目录](#五18-掌目录文章--视频) · [一分钟跑起来](#六一分钟跑起来) · [能学到什么](#七能学到什么本仓库能核验到什么) · [文章系列](#十文章系列还有三处判断值得单独拎出来)
+[读哪几掌](#五读哪几掌按角色选路线) · [18 掌目录](#六18-掌目录文章--视频) · [一键启动](#七一键启动docker-compose-一条命令) · [能学到什么](#九能学到什么本仓库能核验到什么) · [文章系列](#十二文章系列还有三处判断值得单独拎出来)
 
 </div>
 
-> 一句话导读：这是一套以**数字人项目**为唯一线索的 Spring AI Alibaba（锁定 v1.1.2.2 生产基线）实战系列——**18 篇文章 + 18 集视频**，全部已发布在腾讯云开发者社区，从选型、环境、底座一路打到 K8s 上线，每一掌都给出可验证的完成标准。本仓库是这套系列的**练习仓库**：系列负责告诉你「为什么这么定」，仓库负责把「实测成什么样」摆出来。
+> **一句话导读**：这是一套以**数字人项目**为唯一线索的 Spring AI Alibaba 实战系列（锁定 v1.1.2.2 生产基线）——**18 篇文章 + 18 集视频**已全部发布在腾讯云开发者社区，从选型、环境、底座一路打到 K8s 上线，每一掌都给出可验证的完成标准。本仓库是它的**练习仓库**：系列负责告诉你「为什么这么定」，仓库负责把「实测成什么样」摆出来。
 
-| 这份内容有三个落点 | 你能拿到什么 |
+| 如果你…… | 直接去 |
 | --- | --- |
-| [Wiki 首页](https://github.com/lifuchun522/springaialibabapractice/wiki) | 系列导读 + 每章一页（交付、发现、遗留问题） |
-| **本 README** | 导读 + 仓库实测出来的偏差与证据 |
-| [`docs/chNN-*.md`](docs) | 每掌的设计文档与验收记录（含原始输出与踩坑） |
-| [Projects](https://github.com/users/lifuchun522/projects/1) | 每章一个条目：Done / In progress / Backlog |
+| 想知道这套内容适不适合自己 | [一、先看这一屏](#一先看这一屏30-秒判断要不要往下读) |
+| 想知道「为什么现在要关心 Agent 框架」 | [二、为什么是现在](#二为什么是现在热的不是模型是框架) |
+| 已经踩过「能跑，但一改需求就动结构」 | [三、Demo 通、架构不通](#三为什么大多数人卡在同一处demo-通架构不通) |
+| 只想知道该读哪几掌 | [五、按角色选路线](#五读哪几掌按角色选路线) |
+| 先把整套跑起来看效果 | [七、一键启动](#七一键启动docker-compose-一条命令) |
+| 想看本仓库实测出了什么偏差 | [八、实测偏差](#八实测与文章的偏差不是抄文档) |
 
 ---
 
-## 一、为什么是现在：热的不是模型，是框架
+## 一、先看这一屏：30 秒判断要不要往下读
+
+**这套内容适合你，如果：**
+
+- 你在做 AI 应用或 Agent 应用，技术栈是 **Java / Spring Boot**；
+- 你正在选型 Spring AI、Spring AI Alibaba、AgentScope、LangChain4j，需要一份**带证据**的对比口径；
+- 你的项目已经「能跑」，但**一加需求就要动结构**，团队不敢往上叠；
+- 你要**交付、上线、被评测**，而不只是做个演示。
+
+**不适合你，如果：**
+
+- 你只想找一份「10 分钟写出第一个 ChatBot」的快速入门——官方文档和 examples 更快；
+- 你是 **Python** 技术栈——除第 7、13 掌的协议部分，其余都是 Spring 侧的工程决策；
+- 你在找一键可跑的成品框架——这套内容给的是**契约与判断**，不是成品代码。
+
+**同一份内容有三个落点，按你的耐心挑一个：**
+
+| 落点 | 给你什么 |
+| --- | --- |
+| [Wiki 首页](https://github.com/lifuchun522/springaialibabapractice/wiki) | 系列导读 + 每章一页（交付、发现、遗留问题） |
+| **本 README** | 导读 + 仓库实测出来的偏差与证据，一篇看完 |
+| [`docs/chNN-*.md`](docs) | 每掌的设计文档与验收记录（含原始输出与踩坑） |
+| [Projects](https://github.com/users/lifuchun522/projects/1) | 每章一个条目：Done / In progress / Backlog |
+
+## 二、为什么是现在：热的不是模型，是框架
 
 2026 这一年，Java 生态里的 AI 框架发生了三件绕不开的事：
 
@@ -51,7 +77,7 @@
 
 而网上的内容，绝大多数停在第一站。所以这套系列从**第一站之后的第二站**开始讲；这个仓库就是第二站里的每一条真实提交。
 
-## 二、为什么大多数人卡在同一处：Demo 通，架构不通
+## 三、为什么大多数人卡在同一处：Demo 通，架构不通
 
 如果你现在的代码长这样，这一套就是写给你的：
 
@@ -67,68 +93,102 @@
 
 > 选型即边界，边界即成本，成本即架构，架构即取舍。
 
-## 三、「降」是什么意思：不是降级，是把框架压到可控
+## 四、「降」是什么意思：不是降级，是把框架压到可控
 
 「降」取的是**降服、收住**的意思，不是降级。整套内容反复在做一件事：**把手里的新技术压到工程可控的范围内**。落在三个具体动作上：
 
-1. **锁版本，不追最新。** 生产基线钉在 **v1.1.2.2**，`v2.0.0-M1.1` 只作为观察线。很多 `NoSuchMethodError` 不是 bug，是选型决策的迟到账单；把 pre-release 用在生产，等于把版本风险转嫁给业务方。本仓库把这条写成了门禁，见[第八节](#八技术基线写在文档里不算数过不了-validate-才算)。
+1. **锁版本，不追最新。** 生产基线钉在 **v1.1.2.2**，`v2.0.0-M1.1` 只作为观察线。很多 `NoSuchMethodError` 不是 bug，是选型决策的迟到账单；把 pre-release 用在生产，等于把版本风险转嫁给业务方。本仓库把这条写成了门禁，见[第十节](#十技术基线写在文档里不算数过不了-validate-才算)。
 2. **先画边界，再比功能。** 把 Spring AI、Spring AI Alibaba Extensions、Agent Framework、Graph Runtime、Admin/Studio 五层摆正位置，先回答「我这个需求该落在哪一层」，再讨论用哪个模块。
 3. **能不加就不加。** 只需要文本补全，Spring AI 基础抽象就够；连多轮对话都不需要，普通 Java 服务加一次 HTTP 调用就是最优解。**框架的价值只在需求跨过阈值时兑现，跨不过去时它就是纯负担。**
 
-## 四、三条阅读路线，别按顺序硬啃
+## 五、读哪几掌：按角色选路线
 
 18 掌是**一条依赖链**，不是 18 篇并列的文章。跳着读会踩两个坑：掌 N 用到的契约是掌 N−1 冻住的；掌 N 的「排查」章节复现的是掌 N−1 留下的故障。
 
-| 路线 | 给谁 | 顺序 | 拿到什么 |
-|------|------|------|----------|
-| **A** | 架构师 / 技术负责人 | 第 1 → 9 → 10 → 13 → 15 掌 | **决策依据**：Agent 该不该上、上到什么程度、写死编排与自主推理怎么取舍、MCP 与 A2A 的边界画在哪、评测体系怎么建 |
-| **B** | 后端 / 全栈（已经在做 AI 应用） | 第 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 掌 | **可直接复用的底座契约**：以 `projectId` 为公共锚点、管理链路与实时链路分离、理解推理只长在一处 |
-| **C** | SRE / 平台 / 测试（准备上线交付） | 第 14 → 15 → 16 → 17 → 18 掌 | **可交付的证据链**：行为由哪一行代码决定 → 六类回归集 → 一条 traceId 定位到模型 / Tool / RAG / Graph 节点 / 远程 Agent → 发版不掉线、能自愈、能回滚 |
+**所以先按你的角色挑一条路线，再往下看目录。**
+
+| 你的角色 | 建议路线 | 走完能拿到什么 |
+| --- | --- | --- |
+| **架构师 / 技术负责人**<br>（正在选型，还没动手） | 第 **1 → 9 → 10 → 13 → 15** 掌 | **决策依据**：Agent 该不该上、上到什么程度、写死编排与自主推理怎么取舍、MCP 与 A2A 的边界画在哪、评测体系怎么建 |
+| **后端 / 全栈**<br>（手上已经在做 AI 应用） | 第 **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8** 掌 | **可直接复用的底座契约**：以 `projectId` 为公共锚点、管理链路与实时链路分离、理解推理只长在一处 |
+| **SRE / 平台 / 测试**<br>（准备上线交付） | 第 **14 → 15 → 16 → 17 → 18** 掌 | **可交付的证据链**：行为由哪一行代码决定 → 六类回归集 → 一条 traceId 定位到模型 / Tool / RAG / Graph 节点 / 远程 Agent → 发版不掉线、能自愈、能回滚 |
 
 第 3 掌有一句值得抄在工位上的话：*底座做得越薄，后面加得越快。*
 
-> 本仓库当前已把路线 B 全部走完，路线 A 走到第 12 掌，路线 C 待第 13 掌起推进——进度见[第九节](#九18-掌进度一眼看完哪一掌已经能跑)。
+只想知道「现在代码到哪一步了」，直接跳 [18 掌进度](#十一18-掌进度一眼看完哪一掌已经能跑)。
 
-## 五、18 掌目录（文章 + 视频）
+## 六、18 掌目录（文章 + 视频）
 
 > 每掌都是同一套结构：**故事 → 问题 → 原理 → 架构 → 实战一次 → 排查 → 优化 → 洞见 → 系统落地**。文章负责可复现的细节，视频负责把这一掌的推演过程讲清楚。
 >
-> 文章与视频**均已发布在腾讯云开发者社区**，点击即可打开；视频为竖屏成片，单集 3～5 分钟。文章 ID 与视频 ID 也存在 [`scripts/build-wiki.py`](scripts/build-wiki.py) 里，Wiki 章节页由它生成。
+> 文章与视频**均已发布在腾讯云开发者社区**，点开就是新页面（建议新开页签：一篇文章配一集视频）；视频为竖屏成片，单集 3～5 分钟。文章 ID 与视频 ID 也存在 [`scripts/build-wiki.py`](scripts/build-wiki.py) 里，Wiki 章节页由它生成。
 
-| 掌 | 主题 | 文章 | 视频 |
-|----|------|------|------|
-| 1 | 亢龙有悔 · 识势选型 | [第 1 掌](https://cloud.tencent.com/developer/article/2752108) | [▶ 87798](https://cloud.tencent.com/developer/video/87798) |
-| 2 | 飞龙在天 · 筑基环境 | [第 2 掌](https://cloud.tencent.com/developer/article/2752106) | [▶ 87796](https://cloud.tencent.com/developer/video/87796) |
-| 3 | 见龙在田 · 数字人底座 | [第 3 掌](https://cloud.tencent.com/developer/article/2752105) | [▶ 87794](https://cloud.tencent.com/developer/video/87794) |
-| 4 | 鸿渐于陆 · 御模对话 | [第 4 掌](https://cloud.tencent.com/developer/article/2752104) | [▶ 87793](https://cloud.tencent.com/developer/video/87793) |
-| 5 | 潜龙勿用 · 藏忆流式 | [第 5 掌](https://cloud.tencent.com/developer/article/2752103) | [▶ 87792](https://cloud.tencent.com/developer/video/87792) |
-| 6 | 利涉大川 · 御器工具 | [第 6 掌](https://cloud.tencent.com/developer/article/2752102) | [▶ 87791](https://cloud.tencent.com/developer/video/87791) |
-| 7 | 突如其来 · 通玄 MCP | [第 7 掌](https://cloud.tencent.com/developer/article/2752101) | [▶ 87790](https://cloud.tencent.com/developer/video/87790) |
-| 8 | 震惊百里 · 入藏 RAG | [第 8 掌](https://cloud.tencent.com/developer/article/2752097) | [▶ 87789](https://cloud.tencent.com/developer/video/87789) |
-| 9 | 或跃在渊 · ReactAgent | [第 9 掌](https://cloud.tencent.com/developer/article/2752096) | [▶ 87788](https://cloud.tencent.com/developer/video/87788) |
-| 10 | 双龙取水 · 百阵流程 | [第 10 掌](https://cloud.tencent.com/developer/article/2752095) | [▶ 87787](https://cloud.tencent.com/developer/video/87787) |
-| 11 | 鱼跃于渊 · 图谱 Graph | [第 11 掌](https://cloud.tencent.com/developer/article/2752094) | [▶ 87786](https://cloud.tencent.com/developer/video/87786) |
-| 12 | 时乘六龙 · 分身多 Agent | [第 12 掌](https://cloud.tencent.com/developer/article/2752093) | [▶ 87785](https://cloud.tencent.com/developer/video/87785) |
-| 13 | 密云不雨 · 跨域 A2A | [第 13 掌](https://cloud.tencent.com/developer/article/2752092) | [▶ 87784](https://cloud.tencent.com/developer/video/87784) |
-| 14 | 损则有孚 · 溯源源码 | [第 14 掌](https://cloud.tencent.com/developer/article/2752091) | [▶ 87783](https://cloud.tencent.com/developer/video/87783) |
-| 15 | 龙战于野 · 试炼评测 | [第 15 掌](https://cloud.tencent.com/developer/article/2752089) | [▶ 87782](https://cloud.tencent.com/developer/video/87782) |
-| 16 | 履霜冰至 · 立派服务 | [第 16 掌](https://cloud.tencent.com/developer/article/2752087) | [▶ 87781](https://cloud.tencent.com/developer/video/87781) |
-| 17 | 羝羊触藩 · 观星治理 | [第 17 掌](https://cloud.tencent.com/developer/article/2752086) | [▶ 87797](https://cloud.tencent.com/developer/video/87797) |
-| 18 | 神龙摆尾 · 登云 K8s | [第 18 掌](https://cloud.tencent.com/developer/article/2752084) | [▶ 87795](https://cloud.tencent.com/developer/video/87795) |
+| 掌 | 主题 | 读文章 | 看视频 |
+|----|------|--------|--------|
+| 1 | 亢龙有悔 · 识势选型 | [文章](https://cloud.tencent.com/developer/article/2752108) | [视频](https://cloud.tencent.com/developer/video/87798) |
+| 2 | 飞龙在天 · 筑基环境 | [文章](https://cloud.tencent.com/developer/article/2752106) | [视频](https://cloud.tencent.com/developer/video/87796) |
+| 3 | 见龙在田 · 数字人底座 | [文章](https://cloud.tencent.com/developer/article/2752105) | [视频](https://cloud.tencent.com/developer/video/87794) |
+| 4 | 鸿渐于陆 · 御模对话 | [文章](https://cloud.tencent.com/developer/article/2752104) | [视频](https://cloud.tencent.com/developer/video/87793) |
+| 5 | 潜龙勿用 · 藏忆流式 | [文章](https://cloud.tencent.com/developer/article/2752103) | [视频](https://cloud.tencent.com/developer/video/87792) |
+| 6 | 利涉大川 · 御器工具 | [文章](https://cloud.tencent.com/developer/article/2752102) | [视频](https://cloud.tencent.com/developer/video/87791) |
+| 7 | 突如其来 · 通玄 MCP | [文章](https://cloud.tencent.com/developer/article/2752101) | [视频](https://cloud.tencent.com/developer/video/87790) |
+| 8 | 震惊百里 · 入藏 RAG | [文章](https://cloud.tencent.com/developer/article/2752097) | [视频](https://cloud.tencent.com/developer/video/87789) |
+| 9 | 或跃在渊 · ReactAgent | [文章](https://cloud.tencent.com/developer/article/2752096) | [视频](https://cloud.tencent.com/developer/video/87788) |
+| 10 | 双龙取水 · 百阵流程 | [文章](https://cloud.tencent.com/developer/article/2752095) | [视频](https://cloud.tencent.com/developer/video/87787) |
+| 11 | 鱼跃于渊 · 图谱 Graph | [文章](https://cloud.tencent.com/developer/article/2752094) | [视频](https://cloud.tencent.com/developer/video/87786) |
+| 12 | 时乘六龙 · 分身多 Agent | [文章](https://cloud.tencent.com/developer/article/2752093) | [视频](https://cloud.tencent.com/developer/video/87785) |
+| 13 | 密云不雨 · 跨域 A2A | [文章](https://cloud.tencent.com/developer/article/2752092) | [视频](https://cloud.tencent.com/developer/video/87784) |
+| 14 | 损则有孚 · 溯源源码 | [文章](https://cloud.tencent.com/developer/article/2752091) | [视频](https://cloud.tencent.com/developer/video/87783) |
+| 15 | 龙战于野 · 试炼评测 | [文章](https://cloud.tencent.com/developer/article/2752089) | [视频](https://cloud.tencent.com/developer/video/87782) |
+| 16 | 履霜冰至 · 立派服务 | [文章](https://cloud.tencent.com/developer/article/2752087) | [视频](https://cloud.tencent.com/developer/video/87781) |
+| 17 | 羝羊触藩 · 观星治理 | [文章](https://cloud.tencent.com/developer/article/2752086) | [视频](https://cloud.tencent.com/developer/video/87797) |
+| 18 | 神龙摆尾 · 登云 K8s | [文章](https://cloud.tencent.com/developer/article/2752084) | [视频](https://cloud.tencent.com/developer/video/87795) |
 
-**视频怎么看**：18 集与 18 篇一一对应，主题相同、侧重不同——**文章**给完整可复现的细节（环境与版本、依赖与配置、排查过程、完成标准）；**视频**用「13 人圆桌」推演的方式把这一掌的**决策过程**讲一遍：为什么这么定、否掉了哪些方案、红线画在哪里。建议的节奏是**先看视频拿到这一掌的取舍，再读文章落代码**；反过来先读文章，容易在细节里迷路而错过决策本身。
+**视频怎么看**：18 集与 18 篇一一对应，主题相同、侧重不同——**文章**给完整可复现的细节（环境与版本、依赖与配置、排查过程、完成标准）；**视频**用「13 人圆桌」推演的方式把这一掌的**决策过程**讲一遍：为什么这么定、否掉了哪些方案、红线画在哪里。
 
-## 六、一分钟跑起来
+两种翻法都行：**按掌看**——上表每掌一行，左列读文章、右列看视频；**按序看**——从第 1 掌开始，先看视频拿到这一掌的取舍，再读文章落代码。反过来先读文章，容易在细节里迷路而错过决策本身。也可以直接在腾讯云开发者社区搜「降SpringAI阿里」看全部 18 集。
 
-跑测试**不需要密钥、不需要数据库**（H2 内存库 + 假 ChatModel，全部离线）：
+## 七、一键启动：docker compose 一条命令
+
+**不需要装 JDK、不需要装 Maven、不需要先建库。** 镜像从源码自己编译，MySQL 一起起，Flyway 迁移在容器里跑完。
 
 ```bash
 git clone https://github.com/lifuchun522/springaialibabapractice.git
-cd springaialibabapractice
-./mvnw -B -ntp test
+cd springaialibabapractice/deploy
+
+export DEEPSEEK_API_KEY=sk-xxxx
+docker compose -f docker-compose.quickstart.yml up -d --build
 ```
 
-真跑一条 Agent 链路需要 MySQL 8 与一个 DeepSeek Key：
+第一次会慢几分钟（要下 Maven 与 JRE 基础镜像、装依赖、打包），之后就是秒级。起来之后三个容器都应该是 `healthy`：
+
+```console
+$ docker compose -f docker-compose.quickstart.yml ps
+NAME            IMAGE                                    STATUS
+dh-quick-mysql  mysql:8.0                                Up (healthy)
+dh-quick-mcp    saa-quickstart/digital-human-mcp:local   Up (healthy)
+dh-quick-app    saa-quickstart/digital-human:local       Up (healthy)
+```
+
+然后**用浏览器打开** <http://localhost:8080/run/1>：
+
+![数字人运行页：开场白、模型名、主题色都来自数据库](docs/images/quickstart-run-page.png)
+
+这一屏上的东西全是真的，也全是数据：标题与开场白取自 `digital_human_project`，模型名取自 `agent_config`，
+地址栏里的 `1` 就是 `projectId`——**改开场白不用发版，刷新页面就生效**（第 3、4 掌的交付物）。
+
+| 想验证什么 | 怎么看 |
+| --- | --- |
+| 工具真的被 MCP 远程发现了 | `docker compose -f docker-compose.quickstart.yml logs digital-human \| grep 工具` → 应出现「MCP 远程工具已发现 1 个：`showroom_query_availability`」 |
+| 库表是应用自己迁移出来的 | `docker compose -f docker-compose.quickstart.yml logs digital-human \| grep Migrating` → 应出现 V1 起的迁移记录 |
+| 只想跑测试、不想起服务 | `./mvnw -B -ntp test`（**离线**：H2 内存库 + 假 ChatModel，不需要密钥、不需要数据库） |
+
+常用旋钮（`docker-compose.quickstart.yml` 里都有默认值，不改也能跑）：
+`QUICK_APP_PORT`（默认 8080）、`QUICK_MCP_PORT`（8081）、`QUICK_DB_PORT`（3307）、`QUICK_DB_PASSWORD`。
+
+关掉并清库：`docker compose -f docker-compose.quickstart.yml down -v`。
+
+### 不想用 Docker，就在本机起两个进程
 
 ```bash
 docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root -p 33079:3306 mysql:8
@@ -141,32 +201,25 @@ export DIGITAL_HUMAN_DB_PASSWORD=root
 ./mvnw -pl digital-human spring-boot:run
 ```
 
-```bash
-# 最小一条链路：不建项目、不灌知识，先确认「服务 + 模型通道」是活的
-curl -s "http://localhost:8080/api/chat?q=用一句话介绍你自己"
-```
+## 八、实测与文章的偏差（不是抄文档）
 
-```bash
-# 第 9 掌的主链路：一句话进，一个字符串出；同时把「走了哪些节点」交给你
-# （需要先建项目并灌一份知识，步骤见 docs/ch09-验收记录.md）
-curl -s -X POST http://localhost:8080/api/projects/1/agent/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"question":"深圳展厅的开放时间是几点？周一开放吗？","sessionId":"demo"}'
-```
+官方文档给 API，系列文章给思路；但「**把一条链路真正跑通，并对上验收标准**」这段路通常没人陪你走完：版本对不上、参数语义变了、示例写法在当前版本上根本不成立。所以本仓库把偏差写进 `docs/chNN-验收记录.md`，而不是藏在提交信息里：
 
-```json
-{
-  "reply": "深圳展厅每天开放时间是早上九点到晚上六点，不过周一闭馆，所以要避开周一去哦。",
-  "traceId": "b68e4df4ff75",
-  "modelCalls": 2,
-  "events": ["agent.start", "model#1", "tool:knowledge_search", "model#2", "agent.end"]
-}
-```
+官方文档给 API，系列文章给思路；但「**把一条链路真正跑通，并对上验收标准**」这段路通常没人陪你走完：版本对不上、参数语义变了、示例写法在当前版本上根本不成立。所以本仓库把偏差写进 `docs/chNN-验收记录.md`，而不是藏在提交信息里：
 
-`reply` 是给前端的（语音链路 STT → Agent → TTS 不用改），
-`events` / `modelCalls` / `traceId` 是给排查的人的——**引入 Agent 框架的第一收益是可观测性，不是答案变好看**。
+| 掌 | 文章里的写法 | 在本仓库实测到的 | 处置 |
+|----|--------------|------------------|------|
+| 7 | MCP Client 连不上时「工具静默为空」 | 实测直接 `McpTransportException`（404 on `/sse`），行为与文章不同 | 记录差异，并把「清单为空」做成启动期 fail-fast |
+| 8 | `similarityThreshold` 控制检索 | 阈值 0 会让「无依据拒答」分支永不触发（得分 0 也会命中） | 向量库宽口径取候选，业务侧另设相关度下限 |
+| 9 | 挂框架的工具重试拦截器 | 工具失败已在工具边界被转成可读结果，外层拦截器**永远不会触发** | 失败策略收归工具边界，不让「配了但不生效」的通道留在代码里 |
+| 9 | Spring AI Alibaba 与 Spring AI 是一套版本 | `agent-framework → graph-core` 依赖 MCP SDK **0.14.0**，而 Spring AI 1.1.2 用 **0.17.0**；enforcer 直接拦下 | 统一到 0.17.0，并用**真实远程工具调用**证明 graph-core 没被拆坏（也解释了第 7 掌的协议差异根因） |
+| 10 | 路由命中率 = 「模型准不准」 | 同一批 20 组样本、同一份口径连跑三轮，命中 **17 / 16 / 16**；而三条「MISS」其实是**我们的标注错** | 口径写进配置而不是留在脑子里；路由调用固定 `temperature: 0`，重跑两轮判定**逐条完全一致** |
+| 11 | 归约策略只是「配一下」 | 并行两条分支写同一个 key 时，`REPLACE` 会**静默丢数据**：没有异常、没有日志，产出从 2 条变 1 条 | 用到的每个 key 都显式声明策略；把「配错会怎样」做成可运行的对照测试 |
+| 12 | 拆多 Agent 是为了「能力更强」 | 三个角色共用工具与记忆时，上下文预算**每轮都要付**（12 个工具的描述与问题是否相关无关）；真实运行里 Router 确实误判过一次 | 工具归属写死成「任何两个角色不共享工具」（可断言）；记忆按 `role:sessionId` 隔离；判据是「一套人格装不下」，不是「工具多」 |
+| 13 | 文章点名的 A2A/Nacos starter 拿来就能用 | 实测 `spring-ai-alibaba-starter-a2a-server`、`-a2a-client`、`-nacos-discovery` 在 1.1.2.2 里**根本不存在**（Maven Central 查无此物） | 按协议语义自己实现一层薄的：能力声明 + 任务生命周期 + 流式 + 版本协商，Nacos 只作为发现实现之一 |
+| 14 | 「我看的源码是这样」 | 同一段代码在 tag 与 main 上**行为不同**：1.1.2.2 的 `ToolRetryInterceptor` 只重试抛异常，main 已把「非成功响应」也纳入重试 | 事实源钉在 tag；定位脚本把版本写成显式常量，升级依赖时行为断言会失败报警 |
 
-## 七、能学到什么：本仓库能核验到什么
+## 九、能学到什么：本仓库能核验到什么
 
 导读给判断，仓库给证据。每一掌在仓库里都对应一条分支、一个 PR、一个 tag，外加一份贴着原始输出的验收记录：
 
@@ -191,21 +244,7 @@ curl -s -X POST http://localhost:8080/api/projects/1/agent/chat \
 2. **失败留在工具边界。** 有限次重试 + 兜底结果，把「这个工具现在不可用」交给模型，而不是把整段会话打断。
 3. **预算放在工程侧。** 单次请求的模型调用次数有硬上界，超限**显式结束**（不是超时），并留下事件证据。
 
-### 下面这些偏差，是仓库实测出来的（不是抄文档）
-
-官方文档给 API，系列文章给思路；但「**把一条链路真正跑通，并对上验收标准**」这段路通常没人陪你走完：版本对不上、参数语义变了、示例写法在当前版本上根本不成立。所以本仓库把偏差写进 `docs/chNN-验收记录.md`，而不是藏在提交信息里：
-
-| 掌 | 文章里的写法 | 在本仓库实测到的 | 处置 |
-|----|--------------|------------------|------|
-| 7 | MCP Client 连不上时「工具静默为空」 | 实测直接 `McpTransportException`（404 on `/sse`），行为与文章不同 | 记录差异，并把「清单为空」做成启动期 fail-fast |
-| 8 | `similarityThreshold` 控制检索 | 阈值 0 会让「无依据拒答」分支永不触发（得分 0 也会命中） | 向量库宽口径取候选，业务侧另设相关度下限 |
-| 9 | 挂框架的工具重试拦截器 | 工具失败已在工具边界被转成可读结果，外层拦截器**永远不会触发** | 失败策略收归工具边界，不让「配了但不生效」的通道留在代码里 |
-| 9 | Spring AI Alibaba 与 Spring AI 是一套版本 | `agent-framework → graph-core` 依赖 MCP SDK **0.14.0**，而 Spring AI 1.1.2 用 **0.17.0**；enforcer 直接拦下 | 统一到 0.17.0，并用**真实远程工具调用**证明 graph-core 没被拆坏（也解释了第 7 掌的协议差异根因） |
-| 10 | 路由命中率 = 「模型准不准」 | 同一批 20 组样本、同一份口径连跑三轮，命中 **17 / 16 / 16**；而三条「MISS」其实是**我们的标注错** | 口径写进配置而不是留在脑子里；路由调用固定 `temperature: 0`，重跑两轮判定**逐条完全一致** |
-| 11 | 归约策略只是「配一下」 | 并行两条分支写同一个 key 时，`REPLACE` 会**静默丢数据**：没有异常、没有日志，产出从 2 条变 1 条 | 用到的每个 key 都显式声明策略；把「配错会怎样」做成可运行的对照测试 |
-| 12 | 拆多 Agent 是为了「能力更强」 | 三个角色共用工具与记忆时，上下文预算**每轮都要付**（12 个工具的描述与问题是否相关无关）；真实运行里 Router 确实误判过一次 | 工具归属写死成「任何两个角色不共享工具」（可断言）；记忆按 `role:sessionId` 隔离；判据是「一套人格装不下」，不是「工具多」 |
-
-## 八、技术基线：写在文档里不算数，过不了 `validate` 才算
+## 十、技术基线：写在文档里不算数，过不了 `validate` 才算
 
 ```mermaid
 flowchart LR
@@ -254,7 +293,7 @@ MCP_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human_ext?...' ./mvnw -pl digit
 启动日志里应出现「MCP 远程工具已发现 1 个：`showroom_query_availability`」；
 若清单为空且 `digital-human.mcp.fail-fast=true`，服务会**直接启动失败**并说明常见原因。
 
-## 九、18 掌进度：一眼看完哪一掌已经能跑
+## 十一、18 掌进度：一眼看完哪一掌已经能跑
 
 | 掌 | 卦象 · 主题 | 分支 | 标签 | 状态 |
 |----|-------------|------|------|------|
@@ -270,8 +309,8 @@ MCP_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human_ext?...' ./mvnw -pl digit
 | 10 | 双龙取水 · 百阵流程 | `chapter/10-workflow-agents` | `ch10` | ✅ 四类 Flow Agent 编排层 + 节点级埋点（耗时/输出条数/序列） |
 | 11 | 鱼跃于渊 · 图谱 Graph | `chapter/11-graph-core` | `ch11` | ✅ 状态图 + 显式归约策略 + 断点中断 + MySQL 检查点（重启可恢复） |
 | 12 | 时乘六龙 · 分身多 Agent | `chapter/12-multi-agent` | `ch12` | ✅ 三角色各带提示词/工具/记忆 + Router 首跳 + 自主 handoff + max-hops |
-| 13 | 密云不雨 · 跨域 A2A | `chapter/13-a2a-nacos` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752092)与视频已发布） |
-| 14 | 损则有孚 · 溯源源码 | `chapter/14-source-pr` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752091)与视频已发布） |
+| 13 | 密云不雨 · 跨域 A2A | `chapter/13-a2a-nacos` | `ch13` | ✅ 知识 Agent 独立进程 + 能力声明/任务生命周期/版本协商 + 发现层可换（[文章](https://cloud.tencent.com/developer/article/2752092)） |
+| 14 | 损则有孚 · 溯源源码 | `chapter/14-source-pr` | `ch14` | ✅ 行为钉到 1.1.2.2 的行号 + 最小复现 + 上游 Issue 草稿（[文章](https://cloud.tencent.com/developer/article/2752091)） |
 | 15 | 龙战于野 · 试炼评测 | `chapter/15-eval-guard` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752089)与视频已发布） |
 | 16 | 履霜冰至 · 立派服务 | `chapter/16-spring-service` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752087)与视频已发布） |
 | 17 | 羝羊触藩 · 观星治理 | `chapter/17-observability-admin` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752086)与视频已发布） |
@@ -291,9 +330,9 @@ Issue（本章要落的能力与验收标准）
 提交信息统一 `type(chNN): 中文描述`；标签打在 `main` 上该章的合并提交处，标签信息里写清分支、PR 与本章交付——
 「某一掌当时交付了什么」，在 tag 上就能看到，不用翻 PR。
 
-## 十、文章系列：还有三处判断值得单独拎出来
+## 十二、文章系列：还有三处判断值得单独拎出来
 
-「降 SpringAI 阿里」十八掌（腾讯云开发者社区，作者：李福春）：全 18 篇的**文章与视频直链**见上面的[第五节目录](#五18-掌目录文章--视频)；封面入口是[第 1 掌·识势选型](https://cloud.tencent.com/developer/article/2752108)（[配套视频](https://cloud.tencent.com/developer/video/87798)）——它决定后面 17 掌你能不能少返工。
+「降 SpringAI 阿里」十八掌（腾讯云开发者社区，作者：李福春）：全 18 篇的**文章与视频直链**见上面的[第六节目录](#六18-掌目录文章--视频)；封面入口是[第 1 掌·识势选型](https://cloud.tencent.com/developer/article/2752108)（[配套视频](https://cloud.tencent.com/developer/video/87798)）——它决定后面 17 掌你能不能少返工。
 
 时间只够看三段的话，看这三处，每一处都是「反直觉 + 有证据」：
 

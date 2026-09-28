@@ -9,9 +9,12 @@ Home 页取自 `docs/系列导读.md`（系列导读的唯一来源：正文手�
 import os
 import re
 
-REPO = r"D:\src\github\springaialibabapractice"
+# 路径都相对脚本自己算：仓库放在哪个目录（或哪个工作树）都不用改这里
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(REPO, "docs")
-OUT = r"D:\src\github\dh-wiki-staging"
+# 产物目录用环境变量覆盖：同时开多个工作树时，默认目录会被互相覆盖
+# （实测踩过：两个会话同时生成，后跑的把先跑的多出来的章节页删掉）
+OUT = os.environ.get("WIKI_OUT", os.path.join(REPO, os.pardir, "saa-wiki-out"))
 REPO_URL = "https://github.com/lifuchun522/springaialibabapractice"
 WIKI_URL = REPO_URL + "/wiki"
 ARTICLE_URL = "https://cloud.tencent.com/developer/article/%s"
@@ -31,13 +34,13 @@ CHAPTERS = [
     (10, "双龙取水", "百阵流程", "chapter/10-workflow-agents", "ch10", 35, "2752095", "87787"),
     (11, "鱼跃于渊", "图谱Graph", "chapter/11-graph-core", "ch11", 38, "2752094", "87786"),
     (12, "时乘六龙", "分身多Agent", "chapter/12-multi-agent", "ch12", 40, "2752093", "87785"),
+    (13, "密云不雨", "跨域A2A", "chapter/13-a2a-nacos", "ch13", 44, "2752092", "87784"),
+    (14, "损则有孚", "溯源源码", "chapter/14-source-pr", "ch14", 46, "2752091", "87783"),
 ]
 
 # 第 13～18 掌文章与视频都已发布，但配套代码与验收记录要等章节落地：只进 Home 的
 # 索引表（链回腾讯云原文），不生成会点不开的 Wiki 页面。
 PENDING = [
-    (13, "密云不雨", "跨域A2A", "chapter/13-a2a-nacos", "2752092", "87784"),
-    (14, "损则有孚", "溯源源码", "chapter/14-source-pr", "2752091", "87783"),
     (15, "龙战于野", "试炼评测", "chapter/15-eval-guard", "2752089", "87782"),
     (16, "履霜冰至", "立派服务", "chapter/16-spring-service", "2752087", "87781"),
     (17, "羝羊触藩", "观星治理", "chapter/17-observability-admin", "2752086", "87797"),
@@ -61,6 +64,8 @@ DELIVERED = {
     10: "四类 Flow Agent 编排层：顺序（理解→检索→回答）、并行（知识库∥业务系统 + 显式归并）、路由（售前/售后/兜底，单次分类）、循环（追问有界）+ 节点级埋点",
     11: "售后流程状态图：显式归约策略（APPEND/REPLACE）、并行汇合与条件边、interruptBefore 断点、MySQL 检查点（重启后可恢复）+ 图结构导出",
     12: "多 Agent 协作：接待/知识/业务三角色各带自己的提示词、工具与记忆；Router 定首跳、角色自主 handoff、max-hops 收敛",
+    13: "跨服务 A2A：知识 Agent 独立进程（独立库、独立 jar）；能力声明 + 任务生命周期 + 流式 + 版本协商；发现层可换（Nacos / 静态表），贯穿 traceId 可对账",
+    14: "源码定位与协作：把「工具失败重试」的行为钉到 1.1.2.2 的模块→类→方法→调用者→行号，附最小复现与符合上游模板的 Issue 草稿；tag 与 main 的差异一并记录",
 }
 
 OUTSTANDING = {
@@ -76,6 +81,8 @@ OUTSTANDING = {
     10: "无评测集（命中率受标注口径影响）；循环在同步请求里转不出新信息；并行只支持两条固定分支；编排仍单进程",
     11: "节点间输出契约未完全解决（Agent 节点产物是包装对象，读不到就写「没取到」）；图结构未版本化；检查点只增不删；只支持一种中断语义",
     12: "角色记忆是进程内的（重启即空）；Router 单点误判；交接时该带哪些状态未定义；低置信度兜底未做",
+    13: "本环境未起 Nacos（多实例用静态表验证）；任务表在内存；流式只做服务端分片；无契约灰度策略",
+    14: "Issue 只到草稿（提交到上游由仓库主人决定）；行号断言未自动化（升级依赖靠行为断言报警）；只覆盖了一个行为的链路；生态仓库未逐一核验",
 }
 
 
@@ -120,16 +127,20 @@ def page_name(n, topic):
 
 
 def chapter_index_table():
-    """18 掌索引表：有 Wiki 页面的掌链到 Wiki，其余链回腾讯云原文。"""
-    rows = ["| 掌 | 主题 | 这一掌交付什么 | 视频（腾讯云社区） | 文章（腾讯云社区） |",
+    """18 掌索引表：有 Wiki 页面的掌链到 Wiki，其余链回腾讯云原文。
+
+    两列都只写链接文字，不写文章号/视频号：编号是维护用的，不是读者要看的
+    （读者要的是「点哪个读文章、点哪个看视频」）。
+    """
+    rows = ["| 掌 | 主题 | 这一掌交付什么 | 读文章 | 看视频 |",
             "| --- | --- | --- | --- | --- |"]
     for n, gua, topic, branch, tag, pr, article, video in CHAPTERS:
-        rows.append("| %d | %s · %s | %s | [▶ 视频](%s) | [第%d掌 · Wiki](%s) ｜ [原文](%s) |"
-                    % (n, gua, topic, DELIVERED[n], VIDEO_URL % video, n,
-                       page_name(n, topic)[:-3], ARTICLE_URL % article))
+        rows.append("| %d | %s · %s | %s | [第%d掌 · Wiki](%s) ｜ [原文](%s) | [视频](%s) |"
+                    % (n, gua, topic, DELIVERED[n],
+                       n, page_name(n, topic)[:-3], ARTICLE_URL % article, VIDEO_URL % video))
     for n, gua, topic, branch, article, video in PENDING:
-        rows.append("| %d | %s · %s | 待做（文章与视频已发布） | [▶ 视频](%s) | [第%d掌](%s) |"
-                    % (n, gua, topic, VIDEO_URL % video, n, ARTICLE_URL % article))
+        rows.append("| %d | %s · %s | 待做（文章与视频已发布） | [文章](%s) | [视频](%s) |"
+                    % (n, gua, topic, ARTICLE_URL % article, VIDEO_URL % video))
     return "\n".join(rows)
 
 
@@ -162,18 +173,23 @@ home += [
     "| 模型通道 | DeepSeek（OpenAI 兼容） | 只留一条**可验证**的通道 |",
     "| 依赖一致性 | enforcer `dependencyConvergence` | 已三次拦住真实版本分叉 |",
     "",
-    "### 怎么跑起来",
+    "### 怎么跑起来（一条命令）",
+    "",
+    "**不需要装 JDK / Maven，也不用先建库**：镜像从源码自己编译，MySQL 一起起，Flyway 迁移在容器里跑完。",
     "",
     "```bash",
-    "# 测试（离线：H2 内存库 + 假 ChatModel，不需要密钥、不需要数据库）",
-    "./mvnw -B -ntp clean test",
+    "git clone https://github.com/lifuchun522/springaialibabapractice.git",
+    "cd springaialibabapractice/deploy",
     "",
-    "# 运行（需要一个 MySQL 8；第 7 掌起还要单独起 MCP Server）",
-    "docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root \\",
-    "  -e MYSQL_DATABASE=digital_human -p 33079:3306 mysql:8",
     "export DEEPSEEK_API_KEY=sk-xxxx",
-    "./mvnw -pl digital-human spring-boot:run",
+    "docker compose -f docker-compose.quickstart.yml up -d --build",
     "```",
+    "",
+    "然后用**浏览器**打开 <http://localhost:8080/run/1>——这一屏上的标题、开场白、模型名全都来自数据库：",
+    "",
+    "![数字人运行页](%s/raw/main/docs/images/quickstart-run-page.png)" % REPO_URL,
+    "",
+    "只想跑测试（离线，不需要密钥与数据库）：`./mvnw -B -ntp test`。",
     "",
     "### 仓库结构",
     "",
@@ -182,8 +198,8 @@ home += [
     "mvnw / mvnw.cmd         Maven Wrapper：把 Maven 版本钉在仓库里",
     "digital-human/          数字人应用（ChatClient 出口、工具、记忆、RAG、Agent、MCP Client）",
     "digital-human-mcp/      展厅预约 MCP Server：独立进程、独立库",
-    "deploy/                 Docker Compose、远程部署脚本、钉钉通知",
-    "scripts/                环境自检、Wiki 生成、Projects 同步",
+    "deploy/                 Docker Compose（生产 + 一键启动）、远程部署脚本、钉钉通知",
+    "scripts/                环境自检、Wiki 生成、Projects 同步、运行页截图",
     "docs/                   系列导读 + 每掌的设计文档与验收记录",
     "```",
     "",
