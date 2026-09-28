@@ -3,10 +3,7 @@
 .git
 .github
 docs
-evidence-ch09
-evidence-ch10
-evidence-ch11
-evidence-ch12
+scripts
 deploy
 target
 **/target
