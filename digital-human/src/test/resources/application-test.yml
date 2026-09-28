@@ -1,0 +1,18 @@
+# 测试 profile：内存库 + Hibernate 建表，保证 `./mvnw test` 离线可跑、结果确定。
+# 运行期走 MySQL + Flyway（见 application.yml），两者的差异点写在 docs/ch03-数字人底座.md 里。
+spring:
+  datasource:
+    url: jdbc:h2:mem:digital_human;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+
+digital-human:
+  chat:
+    default-system: 你是一个专业的数字人主播，回答简洁友好。
