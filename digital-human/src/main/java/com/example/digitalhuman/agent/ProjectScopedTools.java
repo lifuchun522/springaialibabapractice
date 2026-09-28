@@ -1,5 +1,6 @@
 package com.example.digitalhuman.agent;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.ai.document.Document;
@@ -46,14 +47,33 @@ public class ProjectScopedTools {
     }
 
     /**
-     * 为一次请求生成工具集合（已包上审计与超时——Agent 的工具调用同样要留痕）。
+     * 为一次请求生成工具集合（已包上审计、超时与重试——Agent 的工具调用同样要留痕）。
      */
     public ToolCallback[] callbacksFor(Long projectId, String sessionId, String traceId) {
+        return callbacksFor(projectId, sessionId, traceId, new String[0]);
+    }
+
+    /**
+     * 只交出一部分工具（按名字过滤）。
+     *
+     * <p>为什么需要它（第 10 掌）：编排层里「每个节点拿什么能力」是**结构问题，不是提示词问题**。
+     * 「检索节点只能检索」靠 instruction 说是不够的；把工具集合按节点收窄，越权在结构上就不存在。
+     * 同理，理解节点与回答节点一个工具都不该有。
+     *
+     * @param onlyTools 允许交出的工具名；为空表示全部交出
+     */
+    public ToolCallback[] callbacksFor(Long projectId, String sessionId, String traceId, String... onlyTools) {
         Bound bound = new Bound(projectId, sessionId, traceId);
         ToolCallback[] callbacks = MethodToolCallbackProvider.builder()
                 .toolObjects(bound)
                 .build()
                 .getToolCallbacks();
+        if (onlyTools != null && onlyTools.length > 0) {
+            List<String> allowed = List.of(onlyTools);
+            callbacks = Arrays.stream(callbacks)
+                    .filter(callback -> allowed.contains(callback.getToolDefinition().name()))
+                    .toArray(ToolCallback[]::new);
+        }
         return toolRegistry.wrapForAudit(callbacks);
     }
 
