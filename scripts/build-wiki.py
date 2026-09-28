@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""把仓库里的章节文档整理成 GitHub Wiki 页面（Home + 每章一页）。"""
+"""把仓库里的章节文档整理成 GitHub Wiki 页面（Home + 每章一页）。
+
+Home 页取自 `docs/系列导读.md`（系列导读的唯一来源：正文手写，第五掌的索引表
+由本脚本生成），章节页取自 `docs/chNN-*.md` 与 `docs/chNN-验收记录.md`。
+生成结果推到 Wiki 仓（`*.wiki.git`）的 master 分支；不要在 Wiki 上直接改，
+下次生成会覆盖。
+"""
 import os
 import re
 
@@ -7,21 +13,40 @@ REPO = r"D:\src\github\springaialibabapractice"
 DOCS = os.path.join(REPO, "docs")
 OUT = r"D:\src\github\dh-wiki-staging"
 REPO_URL = "https://github.com/lifuchun522/springaialibabapractice"
+WIKI_URL = REPO_URL + "/wiki"
+ARTICLE_URL = "https://cloud.tencent.com/developer/article/%s"
+VIDEO_URL = "https://cloud.tencent.com/developer/video/%s"
 
+# 掌号, 卦象, 主题, 分支, 标签, PR, 文章 ID, 视频 ID
 CHAPTERS = [
-    (1, "亢龙有悔", "识势选型", "chapter/01-value-selection", "ch01", 1, "2752108"),
-    (2, "飞龙在天", "筑基环境", "chapter/02-baseline-env", "ch02", 3, "2752106"),
-    (3, "见龙在田", "数字人底座", "chapter/03-digital-human-demo", "ch03", 7, "2752105"),
-    (4, "鸿渐于陆", "御模对话", "chapter/04-chat-model", "ch04", 9, "2752104"),
-    (5, "潜龙勿用", "藏忆流式", "chapter/05-memory-streaming", "ch05", 11, "2752103"),
-    (6, "利涉大川", "御器工具", "chapter/06-tools", "ch06", 13, "2752102"),
-    (7, "突如其来", "通玄 MCP", "chapter/07-mcp", "ch07", 16, "2752101"),
-    (8, "震惊百里", "入藏 RAG", "chapter/08-rag", "ch08", 19, "2752097"),
-    (9, "或跃在渊", "ReactAgent", "chapter/09-react-agent", "ch09", 26, "2752096"),
-    (10, "双龙取水", "百阵流程", "chapter/10-workflow-agents", "ch10", 35, "2752095"),
-    (11, "鱼跃于渊", "图谱Graph", "chapter/11-graph-core", "ch11", 38, "2752094"),
-    (12, "时乘六龙", "分身多Agent", "chapter/12-multi-agent", "ch12", 40, "2752093"),
+    (1, "亢龙有悔", "识势选型", "chapter/01-value-selection", "ch01", 1, "2752108", "87798"),
+    (2, "飞龙在天", "筑基环境", "chapter/02-baseline-env", "ch02", 3, "2752106", "87796"),
+    (3, "见龙在田", "数字人底座", "chapter/03-digital-human-demo", "ch03", 7, "2752105", "87794"),
+    (4, "鸿渐于陆", "御模对话", "chapter/04-chat-model", "ch04", 9, "2752104", "87793"),
+    (5, "潜龙勿用", "藏忆流式", "chapter/05-memory-streaming", "ch05", 11, "2752103", "87792"),
+    (6, "利涉大川", "御器工具", "chapter/06-tools", "ch06", 13, "2752102", "87791"),
+    (7, "突如其来", "通玄 MCP", "chapter/07-mcp", "ch07", 16, "2752101", "87790"),
+    (8, "震惊百里", "入藏 RAG", "chapter/08-rag", "ch08", 19, "2752097", "87789"),
+    (9, "或跃在渊", "ReactAgent", "chapter/09-react-agent", "ch09", 26, "2752096", "87788"),
+    (10, "双龙取水", "百阵流程", "chapter/10-workflow-agents", "ch10", 35, "2752095", "87787"),
+    (11, "鱼跃于渊", "图谱Graph", "chapter/11-graph-core", "ch11", 38, "2752094", "87786"),
+    (12, "时乘六龙", "分身多Agent", "chapter/12-multi-agent", "ch12", 40, "2752093", "87785"),
 ]
+
+# 第 13～18 掌文章与视频都已发布，但配套代码与验收记录要等章节落地：只进 Home 的
+# 索引表（链回腾讯云原文），不生成会点不开的 Wiki 页面。
+PENDING = [
+    (13, "密云不雨", "跨域A2A", "chapter/13-a2a-nacos", "2752092", "87784"),
+    (14, "损则有孚", "溯源源码", "chapter/14-source-pr", "2752091", "87783"),
+    (15, "龙战于野", "试炼评测", "chapter/15-eval-guard", "2752089", "87782"),
+    (16, "履霜冰至", "立派服务", "chapter/16-spring-service", "2752087", "87781"),
+    (17, "羝羊触藩", "观星治理", "chapter/17-observability-admin", "2752086", "87797"),
+    (18, "神龙摆尾", "登云K8s", "chapter/18-k8s-production", "2752084", "87795"),
+]
+
+# 导读正文的唯一来源；第五掌的索引表在这里被替换成下面生成的内容
+GUIDE = os.path.join(DOCS, "系列导读.md")
+GUIDE_INDEX_MARK = "<!-- WIKI-CHAPTER-INDEX -->"
 
 DELIVERED = {
     1: "五层架构与选型判据 + 以 ChatClient 为唯一出口的最小骨架（DeepSeek 单通道）",
@@ -59,6 +84,12 @@ def read(path):
         return handle.read()
 
 
+def write(path, lines):
+    """统一写 LF：Wiki 仓里换行符就是 LF，避免 Windows 上写出 CRLF 再被 git 改写。"""
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write("\n".join(lines) + "\n")
+
+
 def section(text, keyword):
     """取某个二级标题下的内容（到下一个二级标题为止）。"""
     pattern = re.compile(r"^##\s*(?:\d+、)?\s*" + re.escape(keyword) + r".*$", re.M)
@@ -83,86 +114,111 @@ def first_section(text):
 os.makedirs(OUT, exist_ok=True)
 written = []
 
-home = ["# 降 SpringAI 阿里 十八掌 · 实践仓库文档", ""]
-home.append("本 Wiki 记录这个实践仓库的**背景**与**每一掌的交付与验收**，正文设计文档与验收记录在仓库的 `docs/` 下。")
-home.append("")
-home.append("## 一、这个仓库在做什么")
-home.append("")
-home.append("它跟着腾讯云开发者社区的系列文章《降 SpringAI 阿里》十八掌，"
-            "把一套能进企业系统的 Java AI 应用**从最小骨架逐掌长成数字人 Agent 平台**。")
-home.append("")
-home.append("系列文章：<https://cloud.tencent.com/developer/article/2752108>")
-home.append("")
-home.append("每一掌都按同一套节奏推进，不留「应该能通」：")
-home.append("")
-home.append("```text")
-home.append("Issue（本章要落的能力与验收标准）")
-home.append("   └─ 分支 chapter/NN-主题   ← 只做这一章")
-home.append("        └─ PR（关联 Issue，贴真实验证证据）")
-home.append("             └─ 合并进 main ＋ 打 tag（chNN）")
-home.append("```")
-home.append("")
-home.append("## 二、技术基线（可核验，不是抄文档）")
-home.append("")
-home.append("| 项 | 取值 | 怎么钉住的 |")
-home.append("|----|------|-----------|")
-home.append("| JDK | 21 LTS | enforcer `requireJavaVersion [21,22)` |")
-home.append("| Maven | 3.9.11 | 仓库自带 `./mvnw`，enforcer `requireMavenVersion [3.9,)` |")
-home.append("| Spring Boot | 3.5.10 | 与 SAA 1.1.2.2 的 POM 对齐 |")
-home.append("| Spring AI | 1.1.2 | `spring-ai-bom` 统一管理 |")
-home.append("| Spring AI Alibaba | 1.1.2.2 | `spring-ai-alibaba-bom` + `extensions-bom` |")
-home.append("| 模型通道 | DeepSeek（OpenAI 兼容） | 只留一条**可验证**的通道 |")
-home.append("| 依赖一致性 | enforcer `dependencyConvergence` | 已三次拦住真实版本分叉 |")
-home.append("")
-home.append("## 三、仓库结构")
-home.append("")
-home.append("```text")
-home.append("pom.xml                 父 POM：BOM 统一版本 + enforcer 基线门禁")
-home.append("mvnw / mvnw.cmd         Maven Wrapper：把 Maven 版本钉在仓库里")
-home.append("digital-human/          数字人应用（ChatClient 出口、工具、记忆、MCP Client）")
-home.append("digital-human-mcp/      展厅预约 MCP Server：独立进程、独立库")
-home.append("scripts/env-check.ps1   新机器环境自检")
-home.append("docs/                   每掌的设计文档与验收记录")
-home.append("```")
-home.append("")
-home.append("## 四、怎么跑起来")
-home.append("")
-home.append("```bash")
-home.append("# 测试（离线，内存库，不需要外部依赖）")
-home.append("./mvnw -B -ntp clean test")
-home.append("")
-home.append("# 运行（需要一个 MySQL 8；第 7 掌起还要起 MCP Server）")
-home.append("docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root \\")
-home.append("  -e MYSQL_DATABASE=digital_human -p 3306:3306 mysql:8")
-home.append("export DEEPSEEK_API_KEY=sk-xxxx")
-home.append("./mvnw -pl digital-human spring-boot:run")
-home.append("```")
-home.append("")
-home.append("## 五、章节进度")
-home.append("")
-home.append("| 掌 | 卦象 · 主题 | 分支 | 标签 | 本章交付 |")
-home.append("|----|-------------|------|------|----------|")
-for n, gua, topic, branch, tag, pr, _ in CHAPTERS:
-    home.append("| %d | [%s · %s](%s) | `%s` | `%s` | %s |"
-                % (n, gua, topic, "ch%02d-%s" % (n, topic.replace(" ", "-")), branch, tag, DELIVERED[n]))
-home.append("| 10～18 | 待做 |  |  |  |")
-home.append("")
-home.append("## 六、写在最前面的三条判断")
-home.append("")
-home.append("1. **模型只写参数，代码才动数据**（第 6 掌）：所有安全边界只能画在自己的代码里。")
-home.append("2. **一个能力该不该拆成服务，看调用方有几个**（第 7 掌）：只有一个调用方时，拆是纯成本。")
-home.append("3. **失败要显式**：200 但内容为空、工具静默为空、取消没有留痕——这三类「看起来没事」的失败，"
-            "都比报错更难查，所以每一掌都把它们变成确定的行为。")
-home.append("")
-home.append("---")
-home.append("")
-home.append("仓库地址：<%s> ｜ 每掌的完整证据在 `docs/chNN-验收记录.md`" % REPO_URL)
 
-with open(os.path.join(OUT, "Home.md"), "w", encoding="utf-8") as handle:
-    handle.write("\n".join(home) + "\n")
+def page_name(n, topic):
+    return "ch%02d-%s.md" % (n, topic.replace(" ", "-"))
+
+
+def chapter_index_table():
+    """18 掌索引表：有 Wiki 页面的掌链到 Wiki，其余链回腾讯云原文。"""
+    rows = ["| 掌 | 主题 | 这一掌交付什么 | 视频（腾讯云社区） | 文章（腾讯云社区） |",
+            "| --- | --- | --- | --- | --- |"]
+    for n, gua, topic, branch, tag, pr, article, video in CHAPTERS:
+        rows.append("| %d | %s · %s | %s | [▶ 视频](%s) | [第%d掌 · Wiki](%s) ｜ [原文](%s) |"
+                    % (n, gua, topic, DELIVERED[n], VIDEO_URL % video, n,
+                       page_name(n, topic)[:-3], ARTICLE_URL % article))
+    for n, gua, topic, branch, article, video in PENDING:
+        rows.append("| %d | %s · %s | 待做（文章与视频已发布） | [▶ 视频](%s) | [第%d掌](%s) |"
+                    % (n, gua, topic, VIDEO_URL % video, n, ARTICLE_URL % article))
+    return "\n".join(rows)
+
+
+# Home 页 = docs/系列导读.md（正文） + 仓库侧的可核验信息
+home = read(GUIDE)
+if GUIDE_INDEX_MARK not in home:
+    raise SystemExit("docs/系列导读.md 里找不到索引占位：%s" % GUIDE_INDEX_MARK)
+home = home.replace(GUIDE_INDEX_MARK, chapter_index_table())
+home = home.rstrip("\n").split("\n")
+
+home += [
+    "",
+    "---",
+    "",
+] + [
+    "## 附录：这个仓库里能核验到什么",
+    "",
+    "导读给判断，仓库给证据。上面每一掌在仓库里都对应一条分支、一个 PR、一个 tag，",
+    "外加一份贴着**原始输出**（真实模型返回、数据库查询、日志行）的验收记录。",
+    "",
+    "### 技术基线（不是抄文档，是门禁）",
+    "",
+    "| 项 | 取值 | 怎么钉住的 |",
+    "|----|------|-----------|",
+    "| JDK | 21 LTS | enforcer `requireJavaVersion [21,22)` |",
+    "| Maven | 3.9.11 | 仓库自带 `./mvnw`，enforcer `requireMavenVersion [3.9,)` |",
+    "| Spring Boot | 3.5.10 | 与 SAA 1.1.2.2 的 POM 对齐 |",
+    "| Spring AI | 1.1.2 | `spring-ai-bom` 统一管理 |",
+    "| Spring AI Alibaba | 1.1.2.2 | `spring-ai-alibaba-bom` + `extensions-bom`（`v2.0.0-M1.1` 只观察） |",
+    "| 模型通道 | DeepSeek（OpenAI 兼容） | 只留一条**可验证**的通道 |",
+    "| 依赖一致性 | enforcer `dependencyConvergence` | 已三次拦住真实版本分叉 |",
+    "",
+    "### 怎么跑起来",
+    "",
+    "```bash",
+    "# 测试（离线：H2 内存库 + 假 ChatModel，不需要密钥、不需要数据库）",
+    "./mvnw -B -ntp clean test",
+    "",
+    "# 运行（需要一个 MySQL 8；第 7 掌起还要单独起 MCP Server）",
+    "docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root \\",
+    "  -e MYSQL_DATABASE=digital_human -p 33079:3306 mysql:8",
+    "export DEEPSEEK_API_KEY=sk-xxxx",
+    "./mvnw -pl digital-human spring-boot:run",
+    "```",
+    "",
+    "### 仓库结构",
+    "",
+    "```text",
+    "pom.xml                 父 POM：BOM 统一版本 + enforcer 基线门禁",
+    "mvnw / mvnw.cmd         Maven Wrapper：把 Maven 版本钉在仓库里",
+    "digital-human/          数字人应用（ChatClient 出口、工具、记忆、RAG、Agent、MCP Client）",
+    "digital-human-mcp/      展厅预约 MCP Server：独立进程、独立库",
+    "deploy/                 Docker Compose、远程部署脚本、钉钉通知",
+    "scripts/                环境自检、Wiki 生成、Projects 同步",
+    "docs/                   系列导读 + 每掌的设计文档与验收记录",
+    "```",
+    "",
+    "### 实测与文章的偏差（写在验收记录里，不做粉饰）",
+    "",
+    "| 掌 | 文章里的写法 | 仓库实测到的 | 处置 |",
+    "|----|--------------|--------------|------|",
+    "| 7 | MCP Client 连不上时「工具静默为空」 | 实测直接 `McpTransportException`（404 on `/sse`） | 「清单为空」改成启动期 fail-fast |",
+    "| 8 | `similarityThreshold` 控制检索 | 阈值 0 会让「无依据拒答」永不触发 | 向量库宽口径取候选，业务侧另设相关度下限 |",
+    "| 9 | 挂框架的工具重试拦截器 | 工具失败已在工具边界转成可读结果，外层拦截器**永不触发** | 失败策略收归工具边界 |",
+    "| 9 | SAA 与 Spring AI 是一套版本 | `graph-core` 依赖 MCP SDK 0.14.0，Spring AI 1.1.2 用 0.17.0，enforcer 拦下 | 统一到 0.17.0，并用真实远程工具调用证明没拆坏 |",
+    "| 10 | 路由命中率 = 模型准不准 | 同口径连跑三轮：17 / 16 / 16，三条 MISS 其实是**标注错** | 口径写进配置，路由固定 `temperature: 0` |",
+    "| 11 | 归约策略只是「配一下」 | 并行两分支写同一 key，`REPLACE` **静默丢数据** | 每个 key 显式声明策略，并做成对照测试 |",
+    "| 12 | 拆多 Agent 是为了「能力更强」 | 三角色共用工具与记忆时，上下文预算每轮都要付 | 工具归属「任意两角色不共享」可断言；判据是人格装不下 |",
+    "",
+    "### 同一份内容，三个落点",
+    "",
+    "| 落点 | 读者 | 内容 |",
+    "|------|------|------|",
+    "| [`docs/chNN-*.md`](%s/tree/main/docs) | 跟着做的人 | 完整设计文档 + 验收记录（含原始输出与踩坑） |" % REPO_URL,
+    "| Wiki（本页 + 每章一页） | 只想看结论的人 | 系列导读 + 每章交付、发现与遗留问题 |",
+    "| [Projects](https://github.com/users/lifuchun522/projects/1) | 关心进度的人 | 每章一个条目，状态 Done / In progress / Backlog |",
+    "",
+    "Wiki 与 Projects 都由脚本生成，**不要手改**（下次生成会覆盖）：",
+    "`python scripts/build-wiki.py`、`python scripts/sync-github-project.py`。",
+    "",
+    "---",
+    "",
+    "仓库地址：<%s> ｜ Wiki：<%s> ｜ 每掌的完整证据在 `docs/chNN-验收记录.md`" % (REPO_URL, WIKI_URL),
+]
+
+write(os.path.join(OUT, "Home.md"), home)
 written.append("Home.md")
 
-for n, gua, topic, branch, tag, pr, article in CHAPTERS:
+for n, gua, topic, branch, tag, pr, article, video in CHAPTERS:
     design_path = os.path.join(DOCS, "ch%02d-%s.md" % (n, topic))
     accept_path = os.path.join(DOCS, "ch%02d-验收记录.md" % n)
     design = read(design_path) if os.path.exists(design_path) else ""
@@ -174,6 +230,7 @@ for n, gua, topic, branch, tag, pr, article in CHAPTERS:
     page.append("| 项 | 值 |")
     page.append("|----|----|")
     page.append("| 系列文章 | <https://cloud.tencent.com/developer/article/%s> |" % article)
+    page.append("| 配套视频 | <https://cloud.tencent.com/developer/video/%s> |" % video)
     page.append("| 分支 | `%s` |" % branch)
     page.append("| PR | [#%d](%s/pull/%d) |" % (pr, REPO_URL, pr))
     page.append("| 标签 | `%s` |" % tag)
@@ -216,17 +273,20 @@ for n, gua, topic, branch, tag, pr, article in CHAPTERS:
     page.append("")
     # 下一掌的页面只在它已经生成时才给链接，否则 wiki 上会留一堆点不开的红链
     done = [n for n, *_ in CHAPTERS]
+    pending = dict((p[0], p[4]) for p in PENDING)
     if n + 1 in done:
         page.append("返回 [Home](Home) ｜ 下一掌：[第 %d 掌](%s)"
-                    % (n + 1, "ch%02d-%s" % (n + 1, dict((c[0], c[2]) for c in CHAPTERS)[n + 1])))
+                    % (n + 1, page_name(n + 1, dict((c[0], c[2]) for c in CHAPTERS)[n + 1])[:-3]))
+    elif n + 1 in pending:
+        page.append("返回 [Home](Home) ｜ 下一掌：第 %d 掌（代码待落地，"
+                    "[文章](%s)与视频已发布）" % (n + 1, ARTICLE_URL % pending[n + 1]))
     else:
         page.append("返回 [Home](Home) ｜ 下一掌：第 %d 掌（待做）" % (n + 1))
     page.append("")
     page.append("> 本掌与文章口径的差异、以及实测中发现的坑，都写在仓库的 `docs/ch%02d-验收记录.md` 里，不做粉饰。" % n)
 
-    name = "ch%02d-%s.md" % (n, topic.replace(" ", "-"))
-    with open(os.path.join(OUT, name), "w", encoding="utf-8") as handle:
-        handle.write("\n".join(page) + "\n")
+    name = page_name(n, topic)
+    write(os.path.join(OUT, name), page)
     written.append(name)
 
 print("生成 %d 个 wiki 页面：" % len(written))
