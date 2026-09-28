@@ -102,6 +102,13 @@ digital-human:
     # 路由分类的温度。分类结果会被代码当条件用，不能有采样自由度：
     # 实测同一批 20 组样本连续跑三次，命中 17 / 16 / 16（一条「预约余位」的问题翻过面）
     route-temperature: 0
+  # 售后状态图（第 11 掌）：流程结构在边里，状态归约在策略里，人机边界是一个节点
+  after-sale:
+    # 金额阈值与「需要人工确认的意图」都是业务规则：写在配置里，不写在提示词里
+    risk-amount-threshold: 500
+    human-review-intents:
+      - REFUND
+      - REPAIR
   # 模型目录：有哪些 provider、每个 provider 下有哪些模型，全部是配置。
   # agent_config.provider / model 必须命中这里，否则改配置时直接 400、启动期也不会带病运行。
   models:

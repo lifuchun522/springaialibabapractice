@@ -1,0 +1,7 @@
+﻿seq	node_id	next_node_id
+1	__START__	intent
+2	intent	__PARALLEL__(intent)
+3	__PARALLEL__(intent)	risk
+4	risk	humanReview
+5	humanReview	reply
+6	reply	__END__
