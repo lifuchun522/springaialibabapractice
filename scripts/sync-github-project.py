@@ -66,7 +66,9 @@ CHAPTERS = [
      "知识 Agent 独立进程 + A2A 协议（能力声明/任务生命周期/流式/版本协商）+ 发现层可换 + traceId 对账"),
     (14, "损则有孚", "溯源源码", "chapter/14-source-pr", "ch14", 46, "Done",
      "源码定位（模块→类→方法→调用者→行号）+ 最小复现 + 符合上游模板的 Issue 草稿 + tag 与 main 的差异记录"),
-    (15, "龙战于野", "试炼评测", "chapter/15-eval-guard", None, None, "Backlog", "待做"),
+    (15, "龙战于野", "试炼评测", "chapter/15-eval-guard", "ch15", 51, "Done",
+     "五层测试（L1 单元 / L2 MockWebServer 断言出站请求 / L3 Testcontainers / L4 快照重放 / L5 在线评测）"
+     "+ 六类回归集 24 条 + Judge 校准 + 可追溯运行记录；离线用例 127→142"),
     (16, "履霜冰至", "立派服务", "chapter/16-spring-service", None, None, "Backlog", "待做"),
     (17, "羝羊触藩", "观星治理", "chapter/17-observability-admin", None, None, "Backlog", "待做"),
     (18, "神龙摆尾", "登云 K8s", "chapter/18-k8s-production", None, None, "Backlog", "待做"),

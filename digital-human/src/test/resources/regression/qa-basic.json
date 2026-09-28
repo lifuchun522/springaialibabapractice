@@ -1,0 +1,70 @@
+{
+  "suite": "qa-basic",
+  "version": "ch15.1",
+  "displayName": "普通问答",
+  "cases": [
+    {
+      "id": "qa-001",
+      "mode": "LIVE",
+      "input": "你好，请用一句话介绍一下你自己。",
+      "determinism": "RULE",
+      "expect": {
+        "mustContain": [],
+        "mustNotContain": ["JAGUAR-9", "你只能依据"],
+        "minChars": 4,
+        "maxChars": 800,
+        "requiresRefusalIntent": false,
+        "requiresSources": null,
+        "expectRefused": null,
+        "expectedTools": []
+      },
+      "judgeCriterion": "回答是否在自我介绍（数字人助手），且没有编造未提供的项目事实。",
+      "offlineReference": null
+    },
+    {
+      "id": "qa-002",
+      "mode": "LIVE",
+      "input": "用一句话说明你能做什么。",
+      "determinism": "RULE",
+      "expect": {
+        "mustContain": [],
+        "mustNotContain": ["JAGUAR-9"],
+        "minChars": 4,
+        "maxChars": 800,
+        "requiresRefusalIntent": false,
+        "requiresSources": null,
+        "expectRefused": null,
+        "expectedTools": []
+      },
+      "judgeCriterion": null,
+      "offlineReference": null
+    },
+    {
+      "id": "qa-003",
+      "mode": "LIVE",
+      "input": "我刚才问了什么？",
+      "determinism": "RULE",
+      "expect": {
+        "mustContain": [],
+        "mustNotContain": ["JAGUAR-9"],
+        "minChars": 2,
+        "maxChars": 800,
+        "requiresRefusalIntent": false,
+        "requiresSources": null,
+        "expectRefused": null,
+        "expectedTools": []
+      },
+      "judgeCriterion": null,
+      "offlineReference": null
+    },
+    {
+      "id": "qa-004",
+      "mode": "OFFLINE",
+      "input": "换一个会话/换一个用户后，不能看到上一个会话的历史。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.digitalhuman.web.MemoryAndStreamingTest"
+    }
+  ]
+}

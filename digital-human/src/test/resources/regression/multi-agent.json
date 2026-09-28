@@ -1,0 +1,43 @@
+{
+  "suite": "multi-agent",
+  "version": "ch15.1",
+  "displayName": "Multi-Agent（多角色协作）",
+  "cases": [
+    {
+      "id": "ma-001",
+      "mode": "OFFLINE",
+      "input": "路由规则必须确定：什么输入交给哪个角色，由代码判定而不是模型自选。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.digitalhuman.web.MultiAgentFlowTest"
+    },
+    {
+      "id": "ma-002",
+      "mode": "OFFLINE",
+      "input": "Handoff 跳数必须有上界，超过即显式结束，不允许角色互相踢皮球。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.digitalhuman.web.MultiAgentFlowTest"
+    },
+    {
+      "id": "ma-003",
+      "mode": "OFFLINE",
+      "input": "跨服务（A2A）侧只保留协议编解码、消息结构、超时与降级这些确定性部分。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.digitalhuman.a2a.A2ARegistryTest"
+    },
+    {
+      "id": "ma-004",
+      "mode": "OFFLINE",
+      "input": "远端 Agent 侧的协议结构（消息目录、任务生命周期、版本不匹配拒绝）。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.knowledgeagent.A2AProtocolTest"
+    }
+  ]
+}

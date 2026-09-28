@@ -225,6 +225,21 @@ cd springaialibabapractice
 ./mvnw -B -ntp test
 ```
 
+Since chapter 15 the tests are split into five layers by JUnit tag, and only the two offline layers run by
+default (142 tests: digital-human 133 + mcp 5 + knowledge-agent 4):
+
+```bash
+./mvnw -B -ntp clean verify                                                                    # L1 unit + L2 component (the CI blocking path)
+./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=integration -Dsurefire.excludedGroups=  # L3 real MySQL container
+./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=eval -Dsurefire.excludedGroups=         # L4 recorded-answer replay
+./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=eval-live -Dsurefire.excludedGroups=    # L5 live evaluation (needs a key)
+```
+
+> `groups` and `excludedGroups` must always be passed **together**: Surefire gives exclusion priority, so
+> `-Dsurefire.groups=integration` alone runs nothing at all — and still reports success.
+
+Running a real agent chain needs MySQL 8 and a DeepSeek key:
+
 ```bash
 docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root -p 33079:3306 mysql:8
 
@@ -272,6 +287,11 @@ snippets do not hold on the version you installed. So the repo writes the deviat
 | 10 | Routing accuracy is just "is the model good?" | Same 20 samples, same stated rules, three runs in a row: **17 / 16 / 16**. And the three "misses" were **our own mislabels** | Rules live in config, not in someone's head; routing calls pinned to `temperature: 0` → two reruns matched **line by line** |
 | 11 | Reduction strategy is just "a setting" | When two parallel branches write the same key, `REPLACE` **silently loses data**: no exception, no log, output drops from 2 to 1 | Every used key declares its strategy; "what happens if you get it wrong" became a runnable contrast test |
 | 12 | Splitting into multi-agent makes the system "more capable" | When three roles share tools and memory, the context budget is paid **every turn** (12 tool descriptions, related to the question or not); the router really did misroute once | Tool ownership frozen as "no two roles share a tool" (assertable); memory isolated per `role:sessionId`; the criterion is "one persona no longer fits", not "many tools" |
+| 13 | The A2A/Nacos starters named in the article just work | `spring-ai-alibaba-starter-a2a-server`, `-a2a-client` and `-nacos-discovery` **do not exist** in 1.1.2.2 (Maven Central has nothing under those coordinates) | Implemented a thin layer ourselves from the protocol semantics: capability card + task lifecycle + streaming + version negotiation, with Nacos as just one discovery implementation |
+| 14 | "The source I read says so" | The same code **behaves differently** on the tag and on main: in 1.1.2.2 `ToolRetryInterceptor` retries only thrown exceptions, while main also retries non-success responses | Truth pinned to the tag; the locator script keeps the version as an explicit constant, so a dependency bump makes the behaviour assertion fail and warn |
+| 15 | Give an LLM judge a criterion and it scores quality | First evaluation run, a case whose **criterion was fully satisfied got 0 from the judge**: the criterion said "no discounts invented beyond the material", but the judge only received the criterion and the answer, never the material that already stated "7.5 off from 20 units" — **a judge that cannot see the facts calls facts fabrication** | Added a `reference` parameter to `LlmJudge` so retrieved material is handed over too; calibration samples must carry their own source material, otherwise you measure "are my samples complete", not "is the judge accurate" |
+| 15 | Assert "must refuse" for the security suite | Twice, the same case: the model clearly refused both times, but the wording changed from "I **won't play** that role" to "I **won't take** that 'new role'" — **two false reds** | Phrasing is not a rule: the four security cases became "rules for hard constraints on forbidden content + judge for whether the refusal is explicit", and the stopgap of adding words to the marker list was reverted |
+| 15 | No basis → refuse, without calling the model | That branch is **unreachable in the current configuration**: local hashing embeddings return an unrelated chunk for any Chinese question (score ≈ 0.0995 > `min-score=0.01`), so the "has basis" branch runs and the model itself says "no relevant content in the material" | **Not fixed**: it belongs to chapter 8's threshold and knowledge contract; it stays in the dataset as a **permanently failing** case (`pk-003`), so the L4 replay reproduces the defect every run |
 
 
 ## 9. What you get (and what you can verify here)
@@ -372,9 +392,9 @@ Startup logs should show `MCP 远程工具已发现 1 个：showroom_query_avail
 | 10 | 双龙取水 · Workflows | `chapter/10-workflow-agents` | `ch10` | ✅ Four flow-agent patterns + node-level tracing (timings, emissions, sequence) |
 | 11 | 鱼跃于渊 · Graph core | `chapter/11-graph-core` | `ch11` | ✅ State graph + explicit reduction strategies + interrupt + MySQL checkpoints (survives restart) |
 | 12 | 时乘六龙 · Multi-agent | `chapter/12-multi-agent` | `ch12` | ✅ Three roles, each with its own prompt/tools/memory + router + handoff + max-hops |
-| 13 | 密云不雨 · A2A | `chapter/13-a2a-nacos` | `ch13` | ✅ Standalone knowledge agent + capability card, task lifecycle, version negotiation, swappable discovery ([article](https://cloud.tencent.com/developer/article/2752092) and video already published) |
-| 14 | 损则有孚 · Source PR | `chapter/14-source-pr` | `ch14` | ✅ Behaviour pinned to 1.1.2.2 line numbers + minimal reproduction + upstream issue draft ([article](https://cloud.tencent.com/developer/article/2752091) and video already published) |
-| 15 | 龙战于野 · Evaluation | `chapter/15-eval-guard` | — | ⬜ Planned ([article](https://cloud.tencent.com/developer/article/2752089) and video already published) |
+| 13 | 密云不雨 · A2A | `chapter/13-a2a-nacos` | `ch13` | ✅ Standalone knowledge agent + capability card, task lifecycle, version negotiation, swappable discovery ([article](https://cloud.tencent.com/developer/article/2752092)) |
+| 14 | 损则有孚 · Source PR | `chapter/14-source-pr` | `ch14` | ✅ Behaviour pinned to 1.1.2.2 line numbers + minimal reproduction + upstream issue draft ([article](https://cloud.tencent.com/developer/article/2752091)) |
+| 15 | 龙战于野 · Evaluation | `chapter/15-eval-guard` | `ch15` | ✅ Five test layers (L1 unit / L2 MockWebServer at the HTTP boundary / L3 Testcontainers / L4 snapshot replay / L5 live evaluation) + six regression suites, 24 cases + judge calibration ([article](https://cloud.tencent.com/developer/article/2752089)) |
 | 16 | 履霜冰至 · Service | `chapter/16-spring-service` | — | ⬜ Planned ([article](https://cloud.tencent.com/developer/article/2752087) and video already published) |
 | 17 | 羝羊触藩 · Observability | `chapter/17-observability-admin` | — | ⬜ Planned ([article](https://cloud.tencent.com/developer/article/2752086) and video already published) |
 | 18 | 神龙摆尾 · K8s | `chapter/18-k8s-production` | — | ⬜ Planned ([article](https://cloud.tencent.com/developer/article/2752084) and video already published) |

@@ -188,7 +188,21 @@ dh-quick-app    saa-quickstart/digital-human:local       Up (healthy)
 
 关掉并清库：`docker compose -f docker-compose.quickstart.yml down -v`。
 
+第 15 掌之后，测试按 tag 分成五层，默认只跑离线两层（142 条：digital-human 133 + mcp 5 + knowledge-agent 4）：
+
+```bash
+./mvnw -B -ntp clean verify                                                        # L1 单元 + L2 组件（CI 阻断路径）
+./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=integration -Dsurefire.excludedGroups=  # L3 真实 MySQL 容器
+./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=eval -Dsurefire.excludedGroups=         # L4 真实输出快照重放
+./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=eval-live -Dsurefire.excludedGroups=    # L5 在线评测（要 Key）
+```
+
+> `groups` 与 `excludedGroups` **必须成对写**：Surefire 里排除优先，
+> 只写 `-Dsurefire.groups=integration` 会一条都跑不到，而且构建成功。
+
 ### 不想用 Docker，就在本机起两个进程
+
+真跑一条 Agent 链路需要 MySQL 8 与一个 DeepSeek Key：
 
 ```bash
 docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root -p 33079:3306 mysql:8
@@ -218,6 +232,9 @@ export DIGITAL_HUMAN_DB_PASSWORD=root
 | 12 | 拆多 Agent 是为了「能力更强」 | 三个角色共用工具与记忆时，上下文预算**每轮都要付**（12 个工具的描述与问题是否相关无关）；真实运行里 Router 确实误判过一次 | 工具归属写死成「任何两个角色不共享工具」（可断言）；记忆按 `role:sessionId` 隔离；判据是「一套人格装不下」，不是「工具多」 |
 | 13 | 文章点名的 A2A/Nacos starter 拿来就能用 | 实测 `spring-ai-alibaba-starter-a2a-server`、`-a2a-client`、`-nacos-discovery` 在 1.1.2.2 里**根本不存在**（Maven Central 查无此物） | 按协议语义自己实现一层薄的：能力声明 + 任务生命周期 + 流式 + 版本协商，Nacos 只作为发现实现之一 |
 | 14 | 「我看的源码是这样」 | 同一段代码在 tag 与 main 上**行为不同**：1.1.2.2 的 `ToolRetryInterceptor` 只重试抛异常，main 已把「非成功响应」也纳入重试 | 事实源钉在 tag；定位脚本把版本写成显式常量，升级依赖时行为断言会失败报警 |
+| 15 | 给 LLM Judge 判据就能评质量 | 第一次跑评测，**判据完全正确的用例被 Judge 判 0 分**：判据是「没编造资料以外的折扣」，但 Judge 只拿到判据和回答，看不到资料里本来就写着「满 20 台 7.5 折」——**Judge 看不到事实，就会把事实当编造** | 给 `LlmJudge` 增加 `reference` 形参，把召回的资料原文一起交给它；校准集也必须自带事实来源，否则量出来的是「样本全不全」，不是「Judge 准不准」 |
+| 15 | 安全拒绝用规则断言「必须拒答」 | 同一用例两次运行，模型两次都明确拒答，但说法从「这个角色我**不演**哈」变成「这个『新角色』我就**不接**啦」——**两次假红** | 措辞类判据不该用规则：4 条安全用例改为「规则管禁止内容硬约束 + Judge 管是否明确拒绝」，并撤回那次「往判据表补词」的临时修法 |
+| 15 | 无依据就拒答，不调模型 | 该分支在当前配置下**走不到**：本地哈希嵌入让任意中文问句都能召回一条无关片段（本次 score≈0.0995 > `min-score=0.01`），于是走了「有依据」分支，模型自己在文本层说「资料里没有相关内容」 | **不修**：属于第 8 章的阈值与知识契约问题；把它作为一条**持续失败**的评测用例留在数据集里（`pk-003`），L4 重放因此能稳定复现这条缺陷 |
 
 ## 九、能学到什么：本仓库能核验到什么
 
@@ -311,7 +328,7 @@ MCP_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human_ext?...' ./mvnw -pl digit
 | 12 | 时乘六龙 · 分身多 Agent | `chapter/12-multi-agent` | `ch12` | ✅ 三角色各带提示词/工具/记忆 + Router 首跳 + 自主 handoff + max-hops |
 | 13 | 密云不雨 · 跨域 A2A | `chapter/13-a2a-nacos` | `ch13` | ✅ 知识 Agent 独立进程 + 能力声明/任务生命周期/版本协商 + 发现层可换（[文章](https://cloud.tencent.com/developer/article/2752092)） |
 | 14 | 损则有孚 · 溯源源码 | `chapter/14-source-pr` | `ch14` | ✅ 行为钉到 1.1.2.2 的行号 + 最小复现 + 上游 Issue 草稿（[文章](https://cloud.tencent.com/developer/article/2752091)） |
-| 15 | 龙战于野 · 试炼评测 | `chapter/15-eval-guard` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752089)与视频已发布） |
+| 15 | 龙战于野 · 试炼评测 | `chapter/15-eval-guard` | `ch15` | ✅ 五层测试（L1 单元 / L2 MockWebServer 打桩 / L3 Testcontainers / L4 快照重放 / L5 在线评测）+ 六类回归集 24 条 + Judge 校准（[文章](https://cloud.tencent.com/developer/article/2752089)） |
 | 16 | 履霜冰至 · 立派服务 | `chapter/16-spring-service` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752087)与视频已发布） |
 | 17 | 羝羊触藩 · 观星治理 | `chapter/17-observability-admin` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752086)与视频已发布） |
 | 18 | 神龙摆尾 · 登云 K8s | `chapter/18-k8s-production` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752084)与视频已发布） |

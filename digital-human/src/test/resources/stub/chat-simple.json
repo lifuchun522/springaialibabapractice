@@ -1,0 +1,21 @@
+{
+  "id": "chatcmpl-stub-simple",
+  "object": "chat.completion",
+  "created": 1759000000,
+  "model": "deepseek-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "你好，我是财税小助手，可以基于项目资料回答问题。"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 32,
+    "completion_tokens": 16,
+    "total_tokens": 48
+  }
+}
