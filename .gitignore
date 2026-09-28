@@ -54,3 +54,6 @@ secrets/
 *.key
 *.p12
 *.jks
+
+# 第 14 掌：源码定位用的依赖源码缓存（可从 Maven Central 重新下载，不入库）
+.source-cache/

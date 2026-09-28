@@ -1,0 +1,4 @@
+﻿spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/interceptor/InterceptorChain.java:72
+      public static ToolCallHandler chainToolInterceptors(
+spring-ai-alibaba-agent-framework@1.1.2.2  com/alibaba/cloud/ai/graph/agent/node/AgentToolNode.java:574
+      ToolCallHandler chainedHandler = InterceptorChain.chainToolInterceptors(toolInterceptors, baseHandler);
