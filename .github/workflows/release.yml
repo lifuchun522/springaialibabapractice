@@ -1,0 +1,212 @@
+name: Release
+
+# 发布链路：构建 → 发布 jar 到 Maven 仓库 → 构建并推送镜像 → 部署到服务器 → 钉钉通知。
+#
+# 镜像与 tag 约定（与仓库约定一致）：
+#   仓库：${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_REPO}         → registry.us-west-1.aliyuncs.com/platweb/public
+#   镜像：数字人应用用 public，MCP Server 用 public-mcp
+#   tag ：saa-YYYYMMDD（当天构建的可读版本号） + saa-YYYYMMDD-<sha7>（唯一、可追溯，部署用这个）
+#         同一天重复构建会移动 saa-YYYYMMDD 这个标签，所以**部署永远用带 sha 的那个**。
+#
+# 需要配置的 Secrets / Variables 见 docs/CI-CD配置清单.md。
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      skip_maven:
+        description: 跳过 Maven 仓库发布
+        type: boolean
+        default: false
+      skip_deploy:
+        description: 跳过服务器部署
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  APP_IMAGE: ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPO }}
+  MCP_IMAGE: ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPO_MCP }}
+
+jobs:
+  build:
+    name: 构建与单测
+    runs-on: ubuntu-latest
+    outputs:
+      date_tag: ${{ steps.tag.outputs.date_tag }}
+      unique_tag: ${{ steps.tag.outputs.unique_tag }}
+      maven_version: ${{ steps.tag.outputs.maven_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: 计算版本与镜像标签
+        id: tag
+        run: |
+          DATE_TAG="saa-$(date -u +%Y%m%d)"
+          echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "unique_tag=${DATE_TAG}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "maven_version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "maven_version=0.0.1-SNAPSHOT" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 构建（含单测与基线门禁）
+        run: ./mvnw -B -ntp clean verify
+
+  publish-maven:
+    name: 发布到 Maven 仓库
+    needs: build
+    if: ${{ !inputs.skip_maven }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: 写入 settings.xml（凭据来自 Secrets）
+        env:
+          MAVEN_REPO_ID: ${{ vars.MAVEN_REPO_ID }}
+        run: |
+          mkdir -p ~/.m2
+          envsubst < deploy/settings.xml > ~/.m2/settings.xml
+
+      - name: 发布 jar
+        env:
+          MAVEN_REPO_ID: ${{ vars.MAVEN_REPO_ID }}
+          MAVEN_REPO_URL: ${{ vars.MAVEN_REPO_URL }}
+          MAVEN_REPO_USERNAME: ${{ secrets.MAVEN_REPO_USERNAME }}
+          MAVEN_REPO_PASSWORD: ${{ secrets.MAVEN_REPO_PASSWORD }}
+        run: |
+          ./mvnw -B -ntp -DskipTests \
+            -DaltDeploymentRepository="${MAVEN_REPO_ID}::default::${MAVEN_REPO_URL}" \
+            deploy
+
+  docker:
+    name: 构建并推送镜像
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: 构建 jar（镜像只负责运行，先 package）
+        run: ./mvnw -B -ntp -DskipTests package
+
+      - name: 登录镜像仓库
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 推送 digital-human 镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: digital-human
+          push: true
+          build-args: |
+            BASE_IMAGE=${{ vars.DOCKER_BASE_IMAGE }}
+          tags: |
+            ${{ env.APP_IMAGE }}:${{ needs.build.outputs.date_tag }}
+            ${{ env.APP_IMAGE }}:${{ needs.build.outputs.unique_tag }}
+
+      - name: 推送 digital-human-mcp 镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: digital-human-mcp
+          push: true
+          build-args: |
+            BASE_IMAGE=${{ vars.DOCKER_BASE_IMAGE }}
+          tags: |
+            ${{ env.MCP_IMAGE }}:${{ needs.build.outputs.date_tag }}
+            ${{ env.MCP_IMAGE }}:${{ needs.build.outputs.unique_tag }}
+
+  deploy:
+    name: 部署到服务器
+    needs: [build, docker]
+    if: ${{ !inputs.skip_deploy }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 准备 SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: 同步部署文件并滚动更新
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+          VERSION: ${{ needs.build.outputs.unique_tag }}
+          DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE }}
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          APP_DIGITAL_HUMAN_IMAGE: ${{ env.APP_IMAGE }}
+          APP_MCP_IMAGE: ${{ env.MCP_IMAGE }}
+          APP_DEEPSEEK_API_KEY: ${{ secrets.APP_DEEPSEEK_API_KEY }}
+          APP_DB_URL: ${{ vars.APP_DB_URL }}
+          APP_DB_USER: ${{ vars.APP_DB_USER }}
+          APP_DB_PASSWORD: ${{ secrets.APP_DB_PASSWORD }}
+          APP_MCP_DB_URL: ${{ vars.APP_MCP_DB_URL }}
+          APP_MCP_DB_USER: ${{ vars.APP_MCP_DB_USER }}
+          APP_MCP_DB_PASSWORD: ${{ secrets.APP_MCP_DB_PASSWORD }}
+          APP_PORT: ${{ vars.APP_PORT || '8080' }}
+          MCP_PORT: ${{ vars.MCP_PORT || '8081' }}
+        run: bash deploy/deploy-remote.sh
+
+  notify:
+    name: 钉钉通知
+    needs: [build, publish-maven, docker, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 发送结果
+        env:
+          DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
+          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
+          TITLE: '发布结果'
+          TEXT: |
+            **仓库**：${{ github.repository }}
+            **镜像标签**：${{ needs.build.outputs.unique_tag }}
+            **触发**：${{ github.actor }}（${{ github.event_name }}）
+            **构建**：${{ needs.build.result }}
+            **Maven**：${{ needs.publish-maven.result }}
+            **镜像**：${{ needs.docker.result }}
+            **部署**：${{ needs.deploy.result }}
+            **详情**：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash deploy/notify-dingtalk.sh

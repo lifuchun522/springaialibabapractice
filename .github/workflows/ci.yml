@@ -1,0 +1,55 @@
+name: CI
+
+# 每一次提交都要过同一道门：编译 + 单测 + 基线门禁（JDK/Maven/依赖收敛）。
+# 这里不需要任何密钥——测试用内存库、MCP 客户端在 test profile 下关闭。
+
+on:
+  push:
+    branches: [main, 'chapter/**']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: 编译与单测
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: 编译与测试（两个模块）
+        run: ./mvnw -B -ntp clean verify
+
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: '**/target/surefire-reports/*.txt'
+          if-no-files-found: ignore
+
+      - name: 钉钉通知（失败时）
+        # 不能在 if 里引用 secrets：那会让整个 workflow 校验失败（整个 run 连 job 都建不出来）。
+        # 未配置时由 notify-dingtalk.sh 自己跳过。
+        if: failure()
+        env:
+          DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
+          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
+          TITLE: 'CI 失败'
+          TEXT: |
+            **仓库**：${{ github.repository }}
+            **分支**：${{ github.ref_name }}
+            **提交**：${{ github.sha }}
+            **触发**：${{ github.actor }}
+            **详情**：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash deploy/notify-dingtalk.sh
