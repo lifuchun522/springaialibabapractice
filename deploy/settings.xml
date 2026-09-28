@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven 凭据模板。CI 里由 envsubst 渲染成 ~/.m2/settings.xml，
+  变量只有两个：MAVEN_REPO_ID（server id，要与发布命令里的 id 一致）与账号口令。
+  口令只从 Secrets 注入，不写进仓库、不写进镜像。
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <servers>
+        <server>
+            <!-- 与 release.yml 里的 vars.MAVEN_REPO_ID 一致 -->
+            <id>${MAVEN_REPO_ID}</id>
+            <username>${env.MAVEN_REPO_USERNAME}</username>
+            <password>${env.MAVEN_REPO_PASSWORD}</password>
+        </server>
+    </servers>
+
+    <mirrors>
+        <!-- 依赖下载走公共镜像；发布仍走上面的 server 配置 -->
+        <mirror>
+            <id>aliyun-public</id>
+            <mirrorOf>central</mirrorOf>
+            <url>https://maven.aliyun.com/nexus/content/groups/public</url>
+        </mirror>
+    </mirrors>
+</settings>
