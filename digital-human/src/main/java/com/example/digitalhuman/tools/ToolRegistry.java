@@ -33,16 +33,33 @@ public class ToolRegistry {
     private final ToolCallback[] readOnlyCallbacks;
     private final ToolCallback[] writeCallbacks;
     private final ToolCallback[] remoteCallbacks;
+    private final ToolCallAuditRepository audits;
+    private final ExecutorService toolExecutor;
+    private final long timeoutMs;
+    private final int maxRetries;
 
     public ToolRegistry(ReadOnlyTools readOnlyTools,
                         WriteTools writeTools,
                         ToolCallAuditRepository audits,
                         ExecutorService toolExecutor,
                         @Value("${digital-human.tools.timeout-ms:3000}") long timeoutMs,
+                        @Value("${digital-human.tools.max-retries:2}") int maxRetries,
                         ObjectProvider<ToolCallbackProvider> remoteToolProviders) {
-        this.readOnlyCallbacks = wrap(ToolCallbacks.from(readOnlyTools), audits, toolExecutor, timeoutMs);
-        this.writeCallbacks = wrap(ToolCallbacks.from(writeTools), audits, toolExecutor, timeoutMs);
-        this.remoteCallbacks = wrapRemote(remoteToolProviders, audits, toolExecutor, timeoutMs);
+        this.audits = audits;
+        this.toolExecutor = toolExecutor;
+        this.timeoutMs = timeoutMs;
+        this.maxRetries = Math.max(0, maxRetries);
+        this.readOnlyCallbacks = wrap(ToolCallbacks.from(readOnlyTools));
+        this.writeCallbacks = wrap(ToolCallbacks.from(writeTools));
+        this.remoteCallbacks = wrapRemote(remoteToolProviders);
+    }
+
+    /**
+     * 给「运行期动态生成的工具」补上同样的审计、超时与重试。
+     * 第 9 掌的 Agent 工具是按请求绑定身份的，不能走构造期注册，但边界必须一致。
+     */
+    public ToolCallback[] wrapForAudit(ToolCallback[] callbacks) {
+        return wrap(callbacks);
     }
 
     public ToolCallback[] readOnly() {
@@ -59,18 +76,16 @@ public class ToolRegistry {
         return remoteCallbacks;
     }
 
-    private static ToolCallback[] wrapRemote(ObjectProvider<ToolCallbackProvider> providers,
-                                             ToolCallAuditRepository audits,
-                                             ExecutorService executor, long timeoutMs) {
+    private ToolCallback[] wrapRemote(ObjectProvider<ToolCallbackProvider> providers) {
         List<ToolCallback> collected = new ArrayList<>();
         providers.orderedStream().forEach(provider -> collected.addAll(Arrays.asList(provider.getToolCallbacks())));
-        return wrap(collected.toArray(ToolCallback[]::new), audits, executor, timeoutMs);
+        return wrap(collected.toArray(ToolCallback[]::new));
     }
 
-    private static ToolCallback[] wrap(ToolCallback[] callbacks, ToolCallAuditRepository audits,
-                                       ExecutorService executor, long timeoutMs) {
+    private ToolCallback[] wrap(ToolCallback[] callbacks) {
         return Arrays.stream(callbacks)
-                .map(callback -> (ToolCallback) new AuditingToolCallback(callback, audits, executor, timeoutMs))
+                .map(callback -> (ToolCallback) new AuditingToolCallback(
+                        callback, audits, toolExecutor, timeoutMs, maxRetries))
                 .toArray(ToolCallback[]::new);
     }
 }

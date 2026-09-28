@@ -1,0 +1,7 @@
+﻿id	tool_name	status	elapsed_ms	result_summary
+29	showroom_query_availability	ERROR	19	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException（根因 ClosedChannelException）
+30	showroom_query_availability	ERROR	14	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException（根因 ClosedChannelException）
+31	showroom_query_availability	ERROR	13	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException（根因 ClosedChannelException）
+32	showroom_query_availability	ERROR	7	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException（根因 ClosedChannelException）
+33	showroom_query_availability	ERROR	10	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException（根因 ClosedChannelException）
+34	showroom_query_availability	ERROR	9	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException（根因 ClosedChannelException）

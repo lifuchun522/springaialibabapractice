@@ -51,7 +51,7 @@ class McpRemoteToolTest {
         return new ToolRegistry(new ReadOnlyTools(mock(com.example.digitalhuman.service.ProjectService.class),
                 mock(com.example.digitalhuman.repository.ChatMessageRepository.class)),
                 new WriteTools(mock(com.example.digitalhuman.service.TitleChangeService.class)),
-                audits, executor, 1000, remoteProviders);
+                audits, executor, 1000, 2, remoteProviders);
     }
 
     @Test

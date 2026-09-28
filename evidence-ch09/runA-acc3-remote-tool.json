@@ -1,0 +1,1 @@
+{"reply":"查了一下，深圳展厅 2026-10-03 下午场已经约满了——总共 30 个名额，已预约 30 个，余位是 0。\n\n要不看看上午场，或者换个日期？我可以帮你再查。","traceId":"d9b7d54173ac","modelCalls":2,"events":["agent.start","model#1","tool:showroom_query_availability","model#2","agent.end"]}

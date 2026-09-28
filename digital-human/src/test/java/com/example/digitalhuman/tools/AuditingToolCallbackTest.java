@@ -155,6 +155,33 @@ class AuditingToolCallbackTest {
     }
 
     @Test
+    @DisplayName("call_shouldShowRootCauseWhenWrapperExceptionHasNoMessage")
+    void call_shouldShowRootCauseWhenWrapperExceptionHasNoMessage() {
+        when(audits.save(any(ToolCallAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            // 第 9 掌实测的形状：外层 ToolExecutionException 没有 message，
+            // 真正有用的是最内层的「Connection refused」——只写包装类型等于没写
+            // 第 9 掌实测的形状：外层包装异常没有 message，真正有用的
+            // 「Connection refused」藏在 cause 链最里面——只写外层类型等于没写
+            ToolCallback wrapped = new AuditingToolCallback(
+                    callback("remoteTool", () -> {
+                        throw new IllegalStateException((String) null,
+                                new java.net.ConnectException("Connection refused: localhost/127.0.0.1:8082"));
+                    }), audits, executor, 1000);
+
+            String result = wrapped.call("{}", context());
+
+            assertThat(result).contains("工具执行失败")
+                    .contains("IllegalStateException")
+                    .contains("ConnectException")
+                    .contains("Connection refused");
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
     @DisplayName("call_shouldKeepAuditEvenWhenRawContextIsMissing")
     void call_shouldKeepAuditEvenWhenRawContextIsMissing() {
         when(audits.save(any(ToolCallAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -169,6 +196,91 @@ class AuditingToolCallbackTest {
             verify(audits).save(captor.capture());
             assertThat(captor.getValue().getTraceId()).isEqualTo("no-trace");
             assertThat(captor.getValue().getProjectId()).isNull();
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    // ---- 下面是第 9 掌补上的重试边界：失败要能重试，重试必须有上限 ----
+
+    @Test
+    @DisplayName("call_shouldRetryUntilSuccessAndAuditOnlyTheSuccessfulAttempt")
+    void call_shouldRetryUntilSuccessAndAuditOnlyTheSuccessfulAttempt() {
+        when(audits.save(any(ToolCallAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        AtomicInteger attempts = new AtomicInteger();
+        try {
+            // 前两次抖动、第三次成功：这是「下游 503 偶发」的典型形状
+            ToolCallback wrapped = new AuditingToolCallback(
+                    callback("flakyTool", () -> {
+                        if (attempts.incrementAndGet() <= 2) {
+                            throw new IllegalStateException("下游 503");
+                        }
+                        return "好了";
+                    }), audits, executor, 1000, 2);
+
+            assertThat(wrapped.call("{}", context())).isEqualTo("好了");
+            assertThat(attempts.get()).isEqualTo(3);   // 1 次原始调用 + 2 次重试
+
+            var captor = org.mockito.ArgumentCaptor.forClass(ToolCallAudit.class);
+            verify(audits, org.mockito.Mockito.times(3)).save(captor.capture());
+            // 失败的每一次尝试都留痕，最后一次才是 OK：重试了几次是能从表里数出来的
+            assertThat(captor.getAllValues()).extracting(ToolCallAudit::getStatus)
+                    .containsExactly(ToolCallAudit.Status.ERROR, ToolCallAudit.Status.ERROR, ToolCallAudit.Status.OK);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @DisplayName("call_shouldGiveUpAfterMaxRetriesAndReturnReadableMessage")
+    void call_shouldGiveUpAfterMaxRetriesAndReturnReadableMessage() {
+        when(audits.save(any(ToolCallAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        AtomicInteger attempts = new AtomicInteger();
+        try {
+            // 一直失败：重试必须有上限，否则一次失败会变成无限等待
+            ToolCallback wrapped = new AuditingToolCallback(
+                    callback("alwaysDownTool", () -> {
+                        attempts.incrementAndGet();
+                        throw new IllegalStateException("下游 500");
+                    }), audits, executor, 1000, 2);
+
+            String result = wrapped.call("{}", context());
+
+            // 重试耗尽后仍然是「一句话」，不是异常——模型能读到失败原因并继续回答
+            assertThat(result).contains("工具执行失败").contains("下游 500");
+            assertThat(attempts.get()).isEqualTo(3);
+            verify(audits, org.mockito.Mockito.times(3)).save(any(ToolCallAudit.class));
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @DisplayName("call_shouldNotRetryTimeoutBecauseWaitingLongerHelpsNobody")
+    void call_shouldNotRetryTimeoutBecauseWaitingLongerHelpsNobody() {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        AtomicInteger attempts = new AtomicInteger();
+        try {
+            ToolCallback wrapped = new AuditingToolCallback(
+                    callback("stuckToolWithRetry", () -> {
+                        attempts.incrementAndGet();
+                        try {
+                            Thread.sleep(5000);
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
+                        return "太晚了";
+                    }), audits, executor, 200, 2);
+
+            long startedAt = System.currentTimeMillis();
+            String result = wrapped.call("{}", context());
+            long elapsed = System.currentTimeMillis() - startedAt;
+
+            assertThat(result).contains("已被中止");
+            assertThat(attempts.get()).isEqualTo(1);      // 超时不重试
+            assertThat(elapsed).isLessThan(2000);         // 也就不会等 3 个超时周期
         } finally {
             executor.shutdownNow();
         }
