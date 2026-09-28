@@ -5,12 +5,12 @@ spring:
   application:
     name: digital-human
   ai:
-    # 模型通道选择：业务代码只认 ChatClient，换通道是改配置而不是改代码
-    #   dashscope（默认，系列基线）→ 需要 AI_DASHSCOPE_API_KEY
-    #   openai（DeepSeek 兼容通道）→ 需要 DEEPSEEK_API_KEY，配 profile: deepseek
     model:
-      chat: ${AI_CHAT_PROVIDER:dashscope}
-      # 本掌只用到对话能力，其余模态显式关闭，避免无关的自动装配在启动期要密钥
+      # 本项目只提供一条模型通道：DeepSeek（OpenAI 兼容协议）。
+      # 系列基线是 DashScope，等需要它的章节（第 3 掌语音、第 8 掌 Embedding）再按章引入，
+      # 现在不留「引了但不用」的通道——不用它，就不该在启动期向它要密钥。
+      chat: openai
+      # 本掌只用到对话能力，其余模态显式关闭
       embedding: none
       image: none
       video: none
@@ -19,19 +19,13 @@ spring:
         speech: none
         transcription: none
       moderation: none
-    dashscope:
-      # 密钥只从环境变量注入，禁止写进仓库
-      api-key: ${AI_DASHSCOPE_API_KEY:}
-      chat:
-        options:
-          # 模型名收敛为配置项，便于切换与启动期校验
-          model: qwen-plus
     openai:
-      # DeepSeek 提供 OpenAI 兼容接口，这里复用 Spring AI 的 OpenAI 客户端
+      # 密钥只从环境变量注入，禁止写进仓库
       api-key: ${DEEPSEEK_API_KEY:}
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
       chat:
         options:
+          # 模型名收敛为配置项，便于切换与启动期校验
           model: ${DEEPSEEK_MODEL:deepseek-flash}
 
 digital-human:
