@@ -67,6 +67,16 @@
             <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
         </dependency>
 
+        <!--
+          第 8 掌：RAG。
+          只引入 VectorStore 抽象与内存实现（SimpleVectorStore）——真源在 knowledge_document 表，
+          向量库只是可重建的投影；生产要换持久化向量库（按文章要求逐库核验过滤语义）。
+        -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-vector-store</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
