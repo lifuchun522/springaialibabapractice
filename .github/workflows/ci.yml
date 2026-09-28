@@ -39,7 +39,9 @@ jobs:
           if-no-files-found: ignore
 
       - name: 钉钉通知（失败时）
-        if: failure() && secrets.DINGTALK_WEBHOOK != ''
+        # 不能在 if 里引用 secrets：那会让整个 workflow 校验失败（整个 run 连 job 都建不出来）。
+        # 未配置时由 notify-dingtalk.sh 自己跳过。
+        if: failure()
         env:
           DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
           DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
