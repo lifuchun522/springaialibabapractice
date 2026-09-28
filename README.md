@@ -203,6 +203,7 @@ curl -s -X POST http://localhost:8080/api/projects/1/agent/chat \
 | 9 | Spring AI Alibaba 与 Spring AI 是一套版本 | `agent-framework → graph-core` 依赖 MCP SDK **0.14.0**，而 Spring AI 1.1.2 用 **0.17.0**；enforcer 直接拦下 | 统一到 0.17.0，并用**真实远程工具调用**证明 graph-core 没被拆坏（也解释了第 7 掌的协议差异根因） |
 | 10 | 路由命中率 = 「模型准不准」 | 同一批 20 组样本、同一份口径连跑三轮，命中 **17 / 16 / 16**；而三条「MISS」其实是**我们的标注错** | 口径写进配置而不是留在脑子里；路由调用固定 `temperature: 0`，重跑两轮判定**逐条完全一致** |
 | 11 | 归约策略只是「配一下」 | 并行两条分支写同一个 key 时，`REPLACE` 会**静默丢数据**：没有异常、没有日志，产出从 2 条变 1 条 | 用到的每个 key 都显式声明策略；把「配错会怎样」做成可运行的对照测试 |
+| 13 | 文章点名的 A2A/Nacos starter 拿来就能用 | 实测 `spring-ai-alibaba-starter-a2a-server`、`-a2a-client`、`-nacos-discovery` 在 1.1.2.2 里**根本不存在**（Maven Central 查无此物） | 按协议语义自己实现一层薄的：能力声明 + 任务状态 + 流式 + 版本协商，Nacos 只作为发现实现之一 |
 | 12 | 拆多 Agent 是为了「能力更强」 | 三个角色共用工具与记忆时，上下文预算**每轮都要付**（12 个工具的描述与问题是否相关无关）；真实运行里 Router 确实误判过一次 | 工具归属写死成「任何两个角色不共享工具」（可断言）；记忆按 `role:sessionId` 隔离；判据是「一套人格装不下」，不是「工具多」 |
 
 ## 八、技术基线：写在文档里不算数，过不了 `validate` 才算
@@ -270,7 +271,7 @@ MCP_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human_ext?...' ./mvnw -pl digit
 | 10 | 双龙取水 · 百阵流程 | `chapter/10-workflow-agents` | `ch10` | ✅ 四类 Flow Agent 编排层 + 节点级埋点（耗时/输出条数/序列） |
 | 11 | 鱼跃于渊 · 图谱 Graph | `chapter/11-graph-core` | `ch11` | ✅ 状态图 + 显式归约策略 + 断点中断 + MySQL 检查点（重启可恢复） |
 | 12 | 时乘六龙 · 分身多 Agent | `chapter/12-multi-agent` | `ch12` | ✅ 三角色各带提示词/工具/记忆 + Router 首跳 + 自主 handoff + max-hops |
-| 13 | 密云不雨 · 跨域 A2A | `chapter/13-a2a-nacos` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752092)与视频已发布） |
+| 13 | 密云不雨 · 跨域 A2A | `chapter/13-a2a-nacos` | `ch13` | ✅ 知识 Agent 独立进程 + 能力声明/任务生命周期/版本协商 + 发现层可换（[文章](https://cloud.tencent.com/developer/article/2752092)） |
 | 14 | 损则有孚 · 溯源源码 | `chapter/14-source-pr` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752091)与视频已发布） |
 | 15 | 龙战于野 · 试炼评测 | `chapter/15-eval-guard` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752089)与视频已发布） |
 | 16 | 履霜冰至 · 立派服务 | `chapter/16-spring-service` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752087)与视频已发布） |

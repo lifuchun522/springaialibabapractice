@@ -31,6 +31,7 @@
     <modules>
         <module>digital-human</module>
         <module>digital-human-mcp</module>
+        <module>knowledge-agent</module>
     </modules>
 
     <dependencyManagement>
@@ -83,6 +84,30 @@
                 <groupId>io.swagger.core.v3</groupId>
                 <artifactId>swagger-annotations-jakarta</artifactId>
                 <version>2.2.38</version>
+            </dependency>
+
+            <!--
+              第 13 掌引入 Nacos 客户端做服务发现。这里显式钉版本：
+              生态里 nacos-client 有 2.x 与 3.x 两条线，不钉住就会出现「同一个注册中心两套客户端」，
+              而这类问题在本地单实例时看不出来，只在多实例注册/订阅时暴露。
+            -->
+            <dependency>
+                <groupId>com.alibaba.nacos</groupId>
+                <artifactId>nacos-client</artifactId>
+                <version>2.4.3</version>
+            </dependency>
+
+            <!--
+              第 13 掌引入 nacos-client 后，同一把门禁第四次拦住东西：
+                spring-ai-alibaba-agent-framework → httpclient 4.5.14
+                nacos-client → httpasyncclient            → httpclient 4.5.13
+              处置照旧：统一到较高补丁版本。顺带说明一句——
+              「引入一个注册中心客户端」从来不是「加一个 jar」，它带进来的传递依赖同样要过门禁。
+            -->
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>4.5.14</version>
             </dependency>
 
             <!--
