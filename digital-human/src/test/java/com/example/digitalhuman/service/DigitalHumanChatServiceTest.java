@@ -1,4 +1,4 @@
-package com.example.digitalhuman.web;
+package com.example.digitalhuman.service;
 
 import java.util.List;
 
@@ -13,7 +13,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import com.example.digitalhuman.config.DigitalHumanChatProperties;
 import com.example.digitalhuman.repository.AgentConfigRepository;
-import com.example.digitalhuman.service.DigitalHumanChatService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,7 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * 服务层单测：用假的 ChatModel 撑起真实 ChatClient，全程不联网。
+ * 服务层单测：用假的 ChatModel 与假的账本撑起真实 ChatClient，全程不联网。
  */
 class DigitalHumanChatServiceTest {
 
@@ -37,7 +36,8 @@ class DigitalHumanChatServiceTest {
     private static DigitalHumanChatService serviceWith(ChatModel chatModel, AgentConfigRepository configs) {
         return new DigitalHumanChatService(ChatClient.builder(chatModel).build(), configs,
                 new DigitalHumanChatProperties("你是一个数字人助手，回答简短、口语化。"),
-                new com.example.digitalhuman.ai.ChatOptionsFactory());
+                new com.example.digitalhuman.ai.ChatOptionsFactory(),
+                mock(ChatLedgerService.class), new ConversationGuard());
     }
 
     @Test
@@ -46,7 +46,7 @@ class DigitalHumanChatServiceTest {
         ChatModel chatModel = chatModelReturning("我是一个数字人助手，可以陪你聊天。");
         DigitalHumanChatService service = serviceWith(chatModel, mock(AgentConfigRepository.class));
 
-        String answer = service.answer(null, "用一句话介绍你自己");
+        String answer = service.answer(new ConversationRequest(null, "s1", null, "用一句话介绍你自己"));
 
         assertThat(answer).isEqualTo("我是一个数字人助手，可以陪你聊天。");
         var promptCaptor = org.mockito.ArgumentCaptor.forClass(Prompt.class);
@@ -61,8 +61,31 @@ class DigitalHumanChatServiceTest {
         DigitalHumanChatService service = serviceWith(chatModelReturning("不会被调用"),
                 mock(AgentConfigRepository.class));
 
-        assertThatThrownBy(() -> service.answer(null, "   "))
+        assertThatThrownBy(() -> new ConversationRequest(null, "s1", null, "   "))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("参数 q 不能为空");
+                .hasMessageContaining("不能为空");
+    }
+
+    @Test
+    @DisplayName("answer_shouldRecordUserAndAssistantMessagesInLedger")
+    void answer_shouldRecordUserAndAssistantMessagesInLedger() {
+        ChatModel chatModel = chatModelReturning("深圳很值得逛。");
+        ChatLedgerService ledger = mock(ChatLedgerService.class);
+        DigitalHumanChatService service = new DigitalHumanChatService(
+                ChatClient.builder(chatModel).build(), mock(AgentConfigRepository.class),
+                new DigitalHumanChatProperties("默认人设"), new com.example.digitalhuman.ai.ChatOptionsFactory(),
+                ledger, new ConversationGuard());
+
+        service.answer(new ConversationRequest(null, "s2", 7L, "深圳有什么好玩的"));
+
+        var roleCaptor = org.mockito.ArgumentCaptor.forClass(com.example.digitalhuman.domain.ChatMessage.Role.class);
+        var statusCaptor = org.mockito.ArgumentCaptor.forClass(com.example.digitalhuman.domain.ChatMessage.Status.class);
+        verify(ledger, org.mockito.Mockito.times(2)).append(any(), any(), any(), roleCaptor.capture(),
+                any(), statusCaptor.capture());
+        assertThat(roleCaptor.getAllValues()).containsExactly(
+                com.example.digitalhuman.domain.ChatMessage.Role.USER,
+                com.example.digitalhuman.domain.ChatMessage.Role.ASSISTANT);
+        assertThat(statusCaptor.getAllValues()).containsOnly(
+                com.example.digitalhuman.domain.ChatMessage.Status.COMPLETED);
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.digitalhuman.service.ConversationRequest;
 import com.example.digitalhuman.service.DigitalHumanChatService;
 
 /**
@@ -30,10 +31,12 @@ public class InternalLlmController {
 
     @PostMapping("/chat/completions")
     public Map<String, Object> completions(@RequestBody Map<String, Object> body) {
-        Long projectId = parseProjectId(String.valueOf(body.getOrDefault("user", "")));
+        String user = String.valueOf(body.getOrDefault("user", ""));
+        Long projectId = parseProjectId(user);
+        String sessionId = parseSessionId(user);
         String question = lastUserMessage(body);
 
-        String answer = chatService.answer(projectId, question);
+        String answer = chatService.answer(new ConversationRequest(projectId, sessionId, null, question));
         return Map.of(
                 "id", "chatcmpl-local",
                 "object", "chat.completion",
@@ -42,6 +45,12 @@ public class InternalLlmController {
                         "index", 0,
                         "message", Map.of("role", "assistant", "content", answer),
                         "finish_reason", "stop")));
+    }
+
+    /** Bridge 侧把同一场语音通话固定用一个 sessionId，记忆才串得起来。 */
+    private static String parseSessionId(String user) {
+        String[] parts = user.split(":", 2);
+        return parts.length < 2 ? "default" : parts[1];
     }
 
     /** {@code user} 形如 {@code 12:session-1}，冒号前是项目号。 */

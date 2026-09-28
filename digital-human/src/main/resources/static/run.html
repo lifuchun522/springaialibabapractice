@@ -87,6 +87,17 @@
         return project;
     }
 
+    // 会话标识：同一项目下每个浏览器会话各自一份；后端用 userId:projectId:sessionId 做记忆键
+    const SESSION_KEY = 'dh.session.' + PROJECT_ID;
+    const sessionId = (() => {
+        let id = localStorage.getItem(SESSION_KEY);
+        if (!id) {
+            id = 's' + Math.random().toString(36).slice(2, 10);
+            localStorage.setItem(SESSION_KEY, id);
+        }
+        return id;
+    })();
+
     async function ask() {
         const input = document.getElementById('question');
         const text = input.value.trim();
@@ -95,12 +106,43 @@
         push(text, 'user');
         const button = document.getElementById('send');
         button.disabled = true;
-        const pending = push('…', 'bot');
+        const pending = push('', 'bot');
+        let received = '';
         try {
-            const resp = await fetch('/api/chat?projectId=' + PROJECT_ID + '&q=' + encodeURIComponent(text));
-            pending.textContent = resp.ok ? await resp.text() : '调用失败（HTTP ' + resp.status + '）：' + await resp.text();
+            // 用 fetch + ReadableStream 消费 SSE：EventSource 在流结束后会自动重连，会重复提问
+            const resp = await fetch('/api/projects/' + PROJECT_ID + '/chat/stream?sessionId=' + sessionId
+                + '&text=' + encodeURIComponent(text));
+            if (!resp.ok) {
+                pending.textContent = '调用失败（HTTP ' + resp.status + '）：' + await resp.text();
+                return;
+            }
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            for (;;) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const frames = buffer.split('\n\n');
+                buffer = frames.pop();
+                for (const frame of frames) {
+                    const lines = frame.split('\n');
+                    const isError = lines.some(line => line.startsWith('event: error'));
+                    const data = lines.filter(line => line.startsWith('data:'))
+                        .map(line => line.slice(5).replace(/^ /, ''))
+                        .join('\n');
+                    if (!data) continue;
+                    if (isError) {
+                        pending.textContent = '模型调用失败：' + data;
+                        return;
+                    }
+                    received += data;
+                    pending.textContent = received;   // 增量显示
+                    messages.scrollTop = messages.scrollHeight;
+                }
+            }
         } catch (err) {
-            pending.textContent = '调用异常：' + err;
+            pending.textContent = received || ('调用异常：' + err);
         } finally {
             button.disabled = false;
             input.focus();
