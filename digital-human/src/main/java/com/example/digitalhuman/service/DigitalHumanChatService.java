@@ -1,5 +1,7 @@
 package com.example.digitalhuman.service;
 
+import java.util.Map;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.retry.NonTransientAiException;
@@ -13,6 +15,8 @@ import com.example.digitalhuman.config.DigitalHumanChatProperties;
 import com.example.digitalhuman.domain.AgentConfig;
 import com.example.digitalhuman.domain.ChatMessage;
 import com.example.digitalhuman.repository.AgentConfigRepository;
+import com.example.digitalhuman.tools.ToolContextKeys;
+import com.example.digitalhuman.tools.ToolRegistry;
 
 import reactor.core.publisher.Flux;
 
@@ -41,19 +45,22 @@ public class DigitalHumanChatService {
     private final ChatOptionsFactory chatOptionsFactory;
     private final ChatLedgerService ledger;
     private final ConversationGuard conversationGuard;
+    private final ToolRegistry toolRegistry;
 
     public DigitalHumanChatService(ChatClient chatClient,
                                    AgentConfigRepository agentConfigs,
                                    DigitalHumanChatProperties chatProperties,
                                    ChatOptionsFactory chatOptionsFactory,
                                    ChatLedgerService ledger,
-                                   ConversationGuard conversationGuard) {
+                                   ConversationGuard conversationGuard,
+                                   ToolRegistry toolRegistry) {
         this.chatClient = chatClient;
         this.agentConfigs = agentConfigs;
         this.chatProperties = chatProperties;
         this.chatOptionsFactory = chatOptionsFactory;
         this.ledger = ledger;
         this.conversationGuard = conversationGuard;
+        this.toolRegistry = toolRegistry;
     }
 
     /** 阻塞式一问一答（运行页的 GET 接口、Bridge 端点走这里）。 */
@@ -66,7 +73,7 @@ public class DigitalHumanChatService {
         String provider = config == null ? DEFAULT_PROVIDER : config.getProvider();
         String model = config == null ? DEFAULT_PROVIDER : config.getModel();
         try {
-            String content = invoke(spec(config, conversationId), request.text(), provider, model);
+            String content = invoke(spec(config, request), request.text(), provider, model);
             ledger.append(ledgerProjectId(request), conversationId, request.userId(),
                     ChatMessage.Role.ASSISTANT, content, ChatMessage.Status.COMPLETED);
             return content;
@@ -98,7 +105,7 @@ public class DigitalHumanChatService {
                 ChatMessage.Role.USER, request.text(), ChatMessage.Status.COMPLETED);
 
         StringBuilder received = new StringBuilder();
-        return spec(config, conversationId).user(request.text())
+        return spec(config, request).user(request.text())
                 .stream()
                 .content()
                 .doOnNext(received::append)
@@ -112,13 +119,45 @@ public class DigitalHumanChatService {
                 .doFinally(signal -> conversationGuard.release(conversationId.value()));
     }
 
-    private ChatClient.ChatClientRequestSpec spec(AgentConfig config, ConversationId conversationId) {
+    private ChatClient.ChatClientRequestSpec spec(AgentConfig config, ConversationRequest request) {
+        ConversationId conversationId = request.conversationId();
         ChatClient.ChatClientRequestSpec spec = config == null
                 ? chatClient.prompt().system(chatProperties.defaultSystem())
                 : chatClient.prompt().system(config.getSystemPrompt())
                         .options(chatOptionsFactory.optionsFor(config));
-        // 记忆的读写发生在 Advisor 里，这里只声明「这是哪个会话」
-        return spec.advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId.value()));
+
+        // 只读工具默认交给模型；写工具必须被显式请求，且自身还有确认令牌这道门禁。
+        // 注意：这里传的是已经包好审计与超时的 ToolCallback（用 toolCallbacks 而不是 tools——
+        // tools() 只接受带 @Tool 注解的对象）
+        spec = spec.toolCallbacks(toolCallbacks(request.allowWrite()));
+
+        // 记忆的读写发生在 Advisor 里，这里只声明「这是哪个会话」；
+        // 身份走 ToolContext 旁路，模型看不见也填不了。
+        // 没有登录身份时**不塞假值**：缺失就必须是缺失，否则写工具会拿着一个假 owner 建出待确认记录
+        Map<String, Object> toolContext = new java.util.HashMap<>();
+        toolContext.put(ToolContextKeys.PROJECT_ID, ledgerProjectId(request));
+        toolContext.put(ToolContextKeys.SESSION_ID, conversationId.sessionId());
+        toolContext.put(ToolContextKeys.CONVERSATION_ID, conversationId.value());
+        toolContext.put(ToolContextKeys.TRACE_ID, request.traceId());
+        if (request.userId() != null) {
+            toolContext.put(ToolContextKeys.USER_ID, request.userId());
+        }
+
+        return spec.advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId.value()))
+                .toolContext(toolContext);
+    }
+
+    private org.springframework.ai.tool.ToolCallback[] toolCallbacks(boolean allowWrite) {
+        if (!allowWrite) {
+            return toolRegistry.readOnly();
+        }
+        org.springframework.ai.tool.ToolCallback[] readOnly = toolRegistry.readOnly();
+        org.springframework.ai.tool.ToolCallback[] write = toolRegistry.write();
+        org.springframework.ai.tool.ToolCallback[] all =
+                new org.springframework.ai.tool.ToolCallback[readOnly.length + write.length];
+        System.arraycopy(readOnly, 0, all, 0, readOnly.length);
+        System.arraycopy(write, 0, all, readOnly.length, write.length);
+        return all;
     }
 
     private AgentConfig configOf(Long projectId) {

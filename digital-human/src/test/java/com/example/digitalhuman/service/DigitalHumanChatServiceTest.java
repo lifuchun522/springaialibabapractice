@@ -34,10 +34,14 @@ class DigitalHumanChatServiceTest {
     }
 
     private static DigitalHumanChatService serviceWith(ChatModel chatModel, AgentConfigRepository configs) {
+        com.example.digitalhuman.tools.ToolRegistry tools =
+                mock(com.example.digitalhuman.tools.ToolRegistry.class);
+        when(tools.readOnly()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
+        when(tools.write()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
         return new DigitalHumanChatService(ChatClient.builder(chatModel).build(), configs,
                 new DigitalHumanChatProperties("你是一个数字人助手，回答简短、口语化。"),
                 new com.example.digitalhuman.ai.ChatOptionsFactory(),
-                mock(ChatLedgerService.class), new ConversationGuard());
+                mock(ChatLedgerService.class), new ConversationGuard(), tools);
     }
 
     @Test
@@ -71,10 +75,14 @@ class DigitalHumanChatServiceTest {
     void answer_shouldRecordUserAndAssistantMessagesInLedger() {
         ChatModel chatModel = chatModelReturning("深圳很值得逛。");
         ChatLedgerService ledger = mock(ChatLedgerService.class);
+        com.example.digitalhuman.tools.ToolRegistry tools =
+                mock(com.example.digitalhuman.tools.ToolRegistry.class);
+        when(tools.readOnly()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
+        when(tools.write()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
         DigitalHumanChatService service = new DigitalHumanChatService(
                 ChatClient.builder(chatModel).build(), mock(AgentConfigRepository.class),
                 new DigitalHumanChatProperties("默认人设"), new com.example.digitalhuman.ai.ChatOptionsFactory(),
-                ledger, new ConversationGuard());
+                ledger, new ConversationGuard(), tools);
 
         service.answer(new ConversationRequest(null, "s2", 7L, "深圳有什么好玩的"));
 

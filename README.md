@@ -106,7 +106,7 @@ git push origin ch04
 | 3 | 见龙在田 · 数字人底座 | `chapter/03-digital-human-demo` | `ch03` | 已合入 main：三张表 + 注册登录 + 项目 CRUD + 运行页 |
 | 4 | 鸿渐于陆 · 御模对话 | `chapter/04-chat-model` | `ch04` | 已合入 main：provider 进数据 + 模型目录 + 确定的错误响应 |
 | 5 | 潜龙勿用 · 藏忆流式 | `chapter/05-memory-streaming` | `ch05` | 已合入 main：会话记忆 + SSE 流式 + 消息账本 |
-| 6 | 利涉大川 · 御器工具 | `chapter/06-tools` | — | 待做 |
+| 6 | 利涉大川 · 御器工具 | `chapter/06-tools` | `ch06` | 已合入 main：只读/写工具分离 + 人类确认门禁 + 工具审计与超时 |
 | 7 | 突如其来 · 通玄 MCP | `chapter/07-mcp` | — | 待做 |
 | 8 | 震惊百里 · 入藏 RAG | `chapter/08-rag` | — | 待做 |
 | 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | — | 待做 |

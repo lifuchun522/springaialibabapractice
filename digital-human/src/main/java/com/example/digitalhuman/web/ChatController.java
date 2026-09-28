@@ -59,21 +59,29 @@ public class ChatController {
         return chatService.answer(new ConversationRequest(projectId, sessionId, null, question));
     }
 
-    public record ChatRequest(String text, String sessionId) {
+    public record ChatRequest(String text, String sessionId, Boolean allowWrite) {
     }
 
     public record ChatReply(String reply) {
     }
 
-    /** 阻塞式：换模型只改数据，接口形状不变（第 4 掌的验收点）。 */
+    /**
+     * 阻塞式：换模型只改数据，接口形状不变（第 4 掌的验收点）。
+     *
+     * <p>写能力（{@code allowWrite=true}）必须带登录身份：没有身份就不发写工具，
+     * 免得待确认记录挂在一个假 owner 名下、谁也确认不了。
+     */
     @PostMapping("/projects/{id}/chat")
-    public ChatReply chatForProject(@PathVariable("id") Long projectId,
+    public ChatReply chatForProject(@RequestHeader(value = "X-Token", required = false) String token,
+                                    @PathVariable("id") Long projectId,
                                     @RequestBody ChatRequest request) {
         if (request == null || request.text() == null || request.text().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "text 不能为空");
         }
-        String reply = chatService.answer(
-                new ConversationRequest(projectId, request.sessionId(), null, request.text()));
+        boolean allowWrite = Boolean.TRUE.equals(request.allowWrite());
+        Long userId = allowWrite ? authService.requireUserId(token) : null;
+        String reply = chatService.answer(new ConversationRequest(projectId, request.sessionId(), userId,
+                request.text(), allowWrite));
         return new ChatReply(reply);
     }
 
@@ -85,13 +93,17 @@ public class ChatController {
      */
     @GetMapping(value = "/projects/{id}/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> streamForProject(
+            @RequestHeader(value = "X-Token", required = false) String token,
             @PathVariable("id") Long projectId,
             @RequestParam("text") String text,
-            @RequestParam(value = "sessionId", required = false) String sessionId) {
+            @RequestParam(value = "sessionId", required = false) String sessionId,
+            @RequestParam(value = "allowWrite", required = false, defaultValue = "false") boolean allowWrite) {
         if (text == null || text.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "参数 text 不能为空");
         }
-        return chatService.stream(new ConversationRequest(projectId, sessionId, null, text))
+        // 与阻塞式同一条规则：写能力必须带登录身份
+        Long userId = allowWrite ? authService.requireUserId(token) : null;
+        return chatService.stream(new ConversationRequest(projectId, sessionId, userId, text, allowWrite))
                 .map(chunk -> ServerSentEvent.builder(chunk).build())
                 .onErrorResume(ex -> Flux.just(ServerSentEvent.builder(String.valueOf(ex.getMessage()))
                         .event("error")
