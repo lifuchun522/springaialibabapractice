@@ -111,10 +111,28 @@ def item_body(n, gua, topic, branch, tag, pr, delivery):
     return "\n".join(lines)
 
 
+def normalize(title):
+    """标题归一化：多余空白会让「同一个条目」看起来像两个。"""
+    return " ".join((title or "").split())
+
+
 def existing_items():
-    raw = gh("project", "item-list", PROJECT_NUMBER, "--owner", OWNER, "--format", "json", "--limit", "100")
+    """把看板上已有的条目按标题建索引。
+
+    两个踩过的坑：
+      1. `--format json` 的条目里标题可能在顶层 `title`，也可能只在 `content.title`
+         （draft 条目/不同 gh 版本表现不同）——只读一个字段会让匹配漏掉，
+         于是同一章被**再建一个条目**，看板上出现重复（实测 ch14 就是这种情况）；
+      2. --limit 太小，条目多了以后靠后的章永远匹配不到，同样会重复创建。
+    """
+    raw = gh("project", "item-list", PROJECT_NUMBER, "--owner", OWNER, "--format", "json", "--limit", "500")
     data = json.loads(raw)
-    return {item["title"]: item["id"] for item in data.get("items", [])}
+    index = {}
+    for item in data.get("items", []):
+        title = item.get("title") or (item.get("content") or {}).get("title")
+        if title:
+            index[normalize(title)] = item["id"]
+    return index
 
 
 def main():
@@ -129,8 +147,8 @@ def main():
         title = item_title(n, gua, topic)
         body = item_body(n, gua, topic, branch, tag, pr, delivery)
 
-        if title in existing:
-            item_id = existing[title]
+        if normalize(title) in existing:
+            item_id = existing[normalize(title)]
         else:
             if args.dry_run:
                 print("[dry-run] 新建条目：%s（状态 %s）" % (title, status))
