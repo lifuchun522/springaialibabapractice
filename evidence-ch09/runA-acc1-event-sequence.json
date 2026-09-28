@@ -1,0 +1,1 @@
+{"reply":"深圳展厅每天开放时间是早上九点到晚上六点，不过周一闭馆，所以要避开周一去哦。\n\n对了，参观是免费的，不用买票。如果你们是团体要讲解，得提前三天打电话预约：0755-12345678。要不要我帮你查一下哪天还有余位？","traceId":"b68e4df4ff75","modelCalls":2,"events":["agent.start","model#1","tool:knowledge_search","model#2","agent.end"]}

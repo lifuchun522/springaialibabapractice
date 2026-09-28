@@ -1,0 +1,11 @@
+﻿id	tool_name	status	elapsed_ms	result_summary
+19	showroom_query_availability	ERROR	11	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException
+20	showroom_query_availability	ERROR	11	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException
+21	showroom_query_availability	ERROR	12	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException
+22	showroom_query_availability	ERROR	7	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException
+23	showroom_query_availability	ERROR	8	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException
+24	showroom_query_availability	ERROR	8	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException
+25	showroom_query_availability	ERROR	8	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException
+26	showroom_query_availability	ERROR	7	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException
+27	showroom_query_availability	ERROR	8	工具执行失败：org.springframework.ai.tool.execution.ToolExecutionException
+28	knowledge_search	OK	96	[1] 来源=深圳展厅参观手册.md#0\n深圳展厅开放时间是每天九点到十八点，周一闭馆。参观免费，无需门票。团体讲解需要提前三天预约，预约电话 0755-12345678。展厅共有二十个停车位，先到先得。

@@ -77,6 +77,16 @@
             <artifactId>spring-ai-vector-store</artifactId>
         </dependency>
 
+        <!--
+          第 9 掌：Agent Framework。
+          这是本仓库第一次真正用到 Spring AI Alibaba 自己的模块（前八掌只用 Spring AI 抽象 + 自写适配）：
+          ReactAgent 把「模型 ↔ 工具」的多步循环交给框架，业务侧只提供 instruction 与工具，并挂运行时边界。
+        -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
