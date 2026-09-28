@@ -104,11 +104,22 @@ public class DigitalHumanChatService {
         ledger.append(ledgerProjectId(request), conversationId, request.userId(),
                 ChatMessage.Role.USER, request.text(), ChatMessage.Status.COMPLETED);
 
+        // 空流必须显式失败：这是第 16 掌真实验收抓到的一条不一致——
+        // 阻塞式路径遇到「HTTP 成功但内容为空」会抛 EMPTY_RESPONSE，而流式路径
+        // 当时把它当成「正常答完了」，账本记 COMPLETED、前端收到一条空消息。
+        // 同一个语义在两条路径上表现不同，就是交付契约没有对齐；
+        // 而对前端来说，「没有回答」和「回答是空的」是完全不同的两件事：
+        // 前者要重试提示，后者会静默地什么也不显示。
         StringBuilder received = new StringBuilder();
         return spec(config, request).user(request.text())
                 .stream()
                 .content()
                 .doOnNext(received::append)
+                .switchIfEmpty(Flux.defer(() -> Flux.error(new ModelInvocationException(
+                        ModelInvocationException.Kind.EMPTY_RESPONSE,
+                        config == null ? DEFAULT_PROVIDER : config.getProvider(),
+                        config == null ? DEFAULT_PROVIDER : config.getModel(),
+                        "模型返回了空内容（流式响应里没有任何片段）", null))))
                 .doOnComplete(() -> ledger.append(ledgerProjectId(request), conversationId, request.userId(),
                         ChatMessage.Role.ASSISTANT, received.toString(), ChatMessage.Status.COMPLETED))
                 .doOnCancel(() -> ledger.append(ledgerProjectId(request), conversationId, request.userId(),

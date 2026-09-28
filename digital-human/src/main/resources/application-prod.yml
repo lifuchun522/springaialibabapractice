@@ -1,0 +1,30 @@
+# 生产 profile（第 16 掌）。
+#
+# 存在意义就是文章 12.2 那道题：**同一个镜像，靠 profile + 环境变量切换环境，不改代码、不重新构建**。
+# 启动方式：
+#   java -jar digital-human.jar --spring.profiles.active=prod
+# 必需的环境变量（部署契约见 com.example.digitalhuman.config.DeploymentContract）：
+#   DEEPSEEK_API_KEY  模型凭据，缺了启动即失败
+#
+# 与默认 profile 的差异只有三处，且都是「边界」而不是「功能」：
+# 1) 健康细节不对外暴露：探针只需要看到 UP/DOWN，配置细节留给日志与内网排查；
+# 2) 内网无鉴权入口（/internal/llm/v1，@Profile("!prod")）不加载；
+# 3) 心跳间隔显式写死在这里，避免生产环境依赖「默认值刚好合适」这种运气。
+
+management:
+  endpoint:
+    health:
+      # 生产不把配置细节打在 HTTP 响应里：探针要的是状态，
+      # 而「哪个环境变量没配」属于内网排查信息，不该出现在可能被外部触达的端点上。
+      # 注意 readiness/liveness 两个分组端点仍然可用，运维照样能区分「进程活着」与「配置齐了」。
+      show-details: when-authorized
+
+digital-human:
+  sse:
+    # 生产链路上通常还有网关：15s 小于常见 30/60s 空闲阈值
+    heartbeat: 15s
+
+logging:
+  level:
+    # 生产只留 info，避免把内部状态刷进日志系统
+    com.example.digitalhuman: info
