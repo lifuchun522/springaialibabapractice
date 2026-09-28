@@ -8,12 +8,21 @@
 
 | 项 | 取值 |
 |----|------|
-| JDK | 21 LTS |
+| JDK | 21 LTS（enforcer 强制 `[21,22)`） |
+| Maven | 3.9.11，由仓库自带 `./mvnw` 提供（enforcer 强制 `[3.9,)`） |
 | Spring Boot | 3.5.10 |
 | Spring AI | 1.1.2 |
 | Spring AI Alibaba | 1.1.2.2（`v2.0.0-M1.1` 属 Pre-release，只观察不进生产） |
-| 模型 | DashScope，默认 `qwen-plus` |
-| 构建 | Maven 3.9+（`mvn -B -ntp test`） |
+| 模型 | DeepSeek，默认 `deepseek-flash` |
+| 构建 | `./mvnw -B -ntp test` |
+
+基线不是写在文档里就算数，`mvnw` 锁 Maven、`requireJavaVersion` 锁 JDK、`dependencyConvergence` 锁依赖版本，
+过不了 `validate` 阶段就构建失败。
+
+```bash
+# 新机器第一步：自检（工具链 → 模型通道 → 构建测试），任何一项不过直接退出非 0
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\env-check.ps1   # Windows
+```
 
 ## 模型通道
 
@@ -31,7 +40,7 @@
 
 ```bash
 export DEEPSEEK_API_KEY=sk-xxxx          # Windows: set DEEPSEEK_API_KEY=sk-xxxx
-mvn -pl digital-human spring-boot:run
+./mvnw -pl digital-human spring-boot:run
 curl "http://localhost:8080/api/chat?q=用一句话介绍你自己"
 ```
 
@@ -40,7 +49,7 @@ curl "http://localhost:8080/api/chat?q=用一句话介绍你自己"
 跑测试不受影响（测试注入假 Key，不发起真实调用）：
 
 ```bash
-mvn -B -ntp test
+./mvnw -B -ntp test
 ```
 
 ## 协作流程：Issue → 分支 → PR → main
@@ -67,8 +76,8 @@ Issue（本章要落的能力与验收标准）
 
 | 掌 | 主题 | 分支 | 状态 |
 |----|------|------|------|
-| 1 | 亢龙有悔 · 识势选型 | `chapter/01-value-selection` | 已完成：五层架构 + ChatClient 唯一出口骨架 |
-| 2 | 飞龙在天 · 筑基环境 | `chapter/02-baseline-env` | 待做 |
+| 1 | 亢龙有悔 · 识势选型 | `chapter/01-value-selection` | 已完成：五层架构 + ChatClient 唯一出口骨架（待 PR 合入 main） |
+| 2 | 飞龙在天 · 筑基环境 | `chapter/02-baseline-env` | 已完成：mvnw + 版本对齐门禁 + 环境自检脚本（待 PR 合入 main） |
 | 3 | 见龙在田 · 数字人底座 | `chapter/03-digital-human-demo` | 待做 |
 | 4 | 鸿渐于陆 · 御模对话 | `chapter/04-chat-model` | 待做 |
 | 5 | 潜龙勿用 · 藏忆流式 | `chapter/05-memory-streaming` | 待做 |
@@ -89,8 +98,10 @@ Issue（本章要落的能力与验收标准）
 ## 目录
 
 ```text
-pom.xml                 父 POM：BOM 统一 Spring AI / Spring AI Alibaba 版本
+pom.xml                 父 POM：BOM 统一版本 + enforcer 基线门禁（JDK/Maven/依赖收敛）
+mvnw / mvnw.cmd         Maven Wrapper：把 Maven 版本钉在仓库里
 digital-human/          数字人应用模块（后续各掌在此长能力）
+scripts/env-check.ps1   新机器环境自检（工具链 → 模型通道 → 构建测试）
 docs/                   每掌的设计与验收记录
 ```
 
@@ -98,5 +109,5 @@ docs/                   每掌的设计与验收记录
 
 - 框架版本一律由 BOM 管理，子模块不写框架版本号。
 - 业务代码只依赖 `ChatClient`，不直接注入底层模型对象。
-- 密钥、口令只走环境变量，禁止进仓库。
+- 密钥、口令只走环境变量，禁止进仓库；`.ps1` 脚本保存为 UTF-8 with BOM（PowerShell 5.1 需要）。
 - 一次提交只对应一掌；提交信息用 `type(chNN): 描述`。
