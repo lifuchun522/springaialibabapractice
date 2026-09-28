@@ -30,6 +30,7 @@
 
     <modules>
         <module>digital-human</module>
+        <module>digital-human-mcp</module>
     </modules>
 
     <dependencyManagement>
@@ -69,6 +70,19 @@
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-runtime</artifactId>
                 <version>4.13.1</version>
+            </dependency>
+
+            <!--
+              第 7 掌引入 MCP Client 后，同一把门禁第二次拦住东西：
+                spring-ai-model  → swagger-annotations-jakarta 2.2.38
+                mcp-annotations  → swagger-annotations-jakarta 2.2.36
+              同样统一到较高版本。两次都是「门禁先报，再去查是谁带进来的」，
+              而不是等到运行期出现 NoSuchMethodError 才回头找。
+            -->
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
+                <version>2.2.38</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

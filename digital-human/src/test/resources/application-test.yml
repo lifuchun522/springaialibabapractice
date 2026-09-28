@@ -12,7 +12,15 @@ spring:
   flyway:
     enabled: false
     locations: classpath:db/migration
+  ai:
+    mcp:
+      client:
+        # 单测不依赖外部 MCP Server：关掉客户端，远程工具集为空
+        enabled: false
 
 digital-human:
   chat:
     default-system: 你是一个专业的数字人主播，回答简洁友好。
+  mcp:
+    # 测试环境没有 MCP Server，因此不 fail-fast；fail-fast 本身的行为由单测覆盖
+    fail-fast: false

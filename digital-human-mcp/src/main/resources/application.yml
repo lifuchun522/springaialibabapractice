@@ -1,0 +1,38 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: digital-human-mcp
+  datasource:
+    # MCP Server 自己的库：数字人服务的库是 digital_human，这里是 digital_human_ext
+    url: ${MCP_DB_URL:jdbc:mysql://127.0.0.1:3306/digital_human_ext?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${MCP_DB_USER:root}
+    password: ${MCP_DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  ai:
+    mcp:
+      server:
+        name: digital-human-mcp
+        version: 1.0.0
+        # STREAMABLE：单端点、无会话粘性，部署比 SSE 简单。
+        # 注意：协议模式必须和客户端的端点约定对齐，配错不会报「协议不匹配」，只会得到 404。
+        protocol: STREAMABLE
+        streamable-http:
+          mcp-endpoint: /mcp
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.example.digitalhuman.mcp: info
+    io.modelcontextprotocol: info

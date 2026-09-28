@@ -107,7 +107,7 @@ git push origin ch04
 | 4 | 鸿渐于陆 · 御模对话 | `chapter/04-chat-model` | `ch04` | 已合入 main：provider 进数据 + 模型目录 + 确定的错误响应 |
 | 5 | 潜龙勿用 · 藏忆流式 | `chapter/05-memory-streaming` | `ch05` | 已合入 main：会话记忆 + SSE 流式 + 消息账本 |
 | 6 | 利涉大川 · 御器工具 | `chapter/06-tools` | `ch06` | 已合入 main：只读/写工具分离 + 人类确认门禁 + 工具审计与超时 |
-| 7 | 突如其来 · 通玄 MCP | `chapter/07-mcp` | — | 待做 |
+| 7 | 突如其来 · 通玄 MCP | `chapter/07-mcp` | `ch07` | 已合入 main：独立 MCP Server（展厅预约）+ MCP Client 远程发现与调用 |
 | 8 | 震惊百里 · 入藏 RAG | `chapter/08-rag` | — | 待做 |
 | 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | — | 待做 |
 | 10 | 双龙取水 · 百阵流程 | `chapter/10-workflow-agents` | — | 待做 |
@@ -125,10 +125,25 @@ git push origin ch04
 ```text
 pom.xml                 父 POM：BOM 统一版本 + enforcer 基线门禁（JDK/Maven/依赖收敛）
 mvnw / mvnw.cmd         Maven Wrapper：把 Maven 版本钉在仓库里
-digital-human/          数字人应用模块（后续各掌在此长能力）
+digital-human/          数字人应用模块（ChatClient 出口、工具、记忆、MCP Client）
+digital-human-mcp/      展厅预约 MCP Server：独立进程、独立库（digital_human_ext）
 scripts/env-check.ps1   新机器环境自检（工具链 → 模型通道 → 构建测试）
 docs/                   每掌的设计与验收记录
 ```
+
+## 本地起两个进程（第 7 掌起）
+
+```bash
+# 1) MCP Server（它有自己的库）
+docker exec -i mysql mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS digital_human_ext"
+MCP_DB_URL='jdbc:mysql://127.0.0.1:3306/digital_human_ext?...' ./mvnw -pl digital-human-mcp spring-boot:run
+
+# 2) 数字人服务（默认连 http://localhost:8081 的 /mcp）
+./mvnw -pl digital-human spring-boot:run
+```
+
+启动日志里应出现「MCP 远程工具已发现 1 个：showroom_query_availability」；
+若清单为空且 `digital-human.mcp.fail-fast=true`，服务会直接启动失败并说明常见原因。
 
 ## 约定
 

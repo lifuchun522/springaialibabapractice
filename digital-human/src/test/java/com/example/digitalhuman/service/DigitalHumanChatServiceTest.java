@@ -37,6 +37,7 @@ class DigitalHumanChatServiceTest {
         com.example.digitalhuman.tools.ToolRegistry tools =
                 mock(com.example.digitalhuman.tools.ToolRegistry.class);
         when(tools.readOnly()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
+        when(tools.remote()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
         when(tools.write()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
         return new DigitalHumanChatService(ChatClient.builder(chatModel).build(), configs,
                 new DigitalHumanChatProperties("你是一个数字人助手，回答简短、口语化。"),
@@ -78,6 +79,7 @@ class DigitalHumanChatServiceTest {
         com.example.digitalhuman.tools.ToolRegistry tools =
                 mock(com.example.digitalhuman.tools.ToolRegistry.class);
         when(tools.readOnly()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
+        when(tools.remote()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
         when(tools.write()).thenReturn(new org.springframework.ai.tool.ToolCallback[0]);
         DigitalHumanChatService service = new DigitalHumanChatService(
                 ChatClient.builder(chatModel).build(), mock(AgentConfigRepository.class),
