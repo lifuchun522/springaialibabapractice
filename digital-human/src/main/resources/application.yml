@@ -109,6 +109,10 @@ digital-human:
     human-review-intents:
       - REFUND
       - REPAIR
+  # 多 Agent（第 12 掌）：三个角色各带自己的提示词、工具与记忆
+  multi-agent:
+    # 一跳最多换几个角色：上界由代码握着，不指望模型自己停
+    max-hops: 3
   # 模型目录：有哪些 provider、每个 provider 下有哪些模型，全部是配置。
   # agent_config.provider / model 必须命中这里，否则改配置时直接 400、启动期也不会带病运行。
   models:
