@@ -37,6 +37,7 @@ So this repo writes the deviations down instead of hiding them:
 | 8 | `similarityThreshold` controls retrieval | Threshold 0 makes the "no basis, refuse" branch unreachable (score 0 still hits) | Wide candidate fetch from the store, separate relevance floor in business code |
 | 9 | Attach the framework's tool-retry interceptor | Tool failures are already converted to readable results at the tool boundary, so the outer interceptor **never fires** | Failure policy owned by the tool boundary; no configured-but-dead channel left behind |
 | 9 | Spring AI Alibaba and Spring AI share one version set | `agent-framework → graph-core` depends on MCP SDK **0.14.0** while Spring AI 1.1.2 uses **0.17.0**; the enforcer gate stops the build | Unified on 0.17.0 and proven with **real remote tool calls** (this also explains the chapter 7 protocol gap) |
+| 10 | Routing accuracy is just "is the model good?" | Same 20 samples, same stated rules, three runs in a row: **17 / 16 / 16**. And the three "misses" were **our own mislabels** (visit info counts as presale per the rules) | Rules live in config, not in someone's head; routing calls pinned to `temperature: 0` → two reruns matched **line by line** |
 
 Every such finding lives in the "核验发现与踩坑" section of `docs/chNN-验收记录.md`
 (Chinese), not buried in a commit message.
@@ -195,7 +196,7 @@ from the tag itself.
 | 7 | 突如其来 · MCP | `chapter/07-mcp` | `ch07` | ✅ Standalone MCP server + remote discovery and calls |
 | 8 | 震惊百里 · RAG | `chapter/08-rag` | `ch08` | ✅ Per-project KB + metadata contract + cited answers, refusal without basis |
 | 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | `ch09` | ✅ Event stream + hard model-call cap + tool-boundary retry + ledger |
-| 10 | 双龙取水 · Workflows | `chapter/10-workflow-agents` | — | ⬜ Planned |
+| 10 | 双龙取水 · Workflows | `chapter/10-workflow-agents` | `ch10` | ✅ Four flow-agent patterns + node-level tracing (timings, emissions, sequence) |
 | 11 | 鱼跃于渊 · Graph core | `chapter/11-graph-core` | — | ⬜ Planned |
 | 12 | 时乘六龙 · Multi-agent | `chapter/12-multi-agent` | — | ⬜ Planned |
 | 13 | 密云不雨 · A2A | `chapter/13-a2a-nacos` | — | ⬜ Planned |
