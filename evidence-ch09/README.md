@@ -14,6 +14,7 @@
 | `acc3-mcp-down-final-result.json` | 验收 3 | 补上根因留痕后的同一场景（`根因 ClosedChannelException`） |
 | `runA-acc4-single-string.json` | 验收 4 | 零工具调用也走同一条路径，`reply` 仍是字符串 |
 | `audit-trace-f95d5f5e21cc.txt` | 验收 3 | 9 行 ERROR + 1 行 `knowledge_search` OK（Agent 的自救路径） |
+| `fix-mcp017-*.json` | 验收 3 复跑 | 把 MCP SDK 统一到 0.17.0 之后的回归：四条验收重跑全过，远程 MCP 工具照常工作 |
 | `audit-trace-77d5af760850.txt` | 验收 3 | 6 行 ERROR = 2 次逻辑调用 × 3 次尝试 |
 
 ## 复现方式

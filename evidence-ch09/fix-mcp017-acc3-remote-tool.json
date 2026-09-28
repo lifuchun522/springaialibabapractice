@@ -1,0 +1,1 @@
+{"reply":"深圳展厅 10 月 3 号下午场已经约满了，30 个名额全订完，余位是 0。要不要我帮你看看上午场，或者前后几天的余位？","traceId":"341cf73af9a5","modelCalls":2,"events":["agent.start","model#1","tool:showroom_query_availability","model#2","agent.end"]}
