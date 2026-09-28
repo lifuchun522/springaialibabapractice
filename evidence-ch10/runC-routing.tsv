@@ -1,0 +1,20 @@
+presale	presale	True	你们的数字人支持私有化部署吗？
+presale	presale	True	SaaS 版一个月多少钱？
+presale	presale	True	有没有免费试用？要绑信用卡吗？
+presale	presale	True	我们公司想做数字人，怎么选型？
+presale	presale	True	可以来深圳展厅参观一下吗？
+presale	presale	True	你们的产品和别家比有什么优势？
+presale	presale	True	私有化部署大概要多久上线？
+presale	presale	True	想了解一下你们的报价方案
+presale	presale	True	试用期是多久？
+presale	presale	True	你们支持哪些部署方式？
+aftersale	aftersale	True	展厅这周三下午还有空位吗？
+aftersale	aftersale	True	我要查一下我的预约还在不在
+aftersale	presale	False	展馆周一开门吗？
+aftersale	aftersale	True	帮我看看 2026-10-03 上午的余位
+aftersale	aftersale	True	我买的服务怎么还没生效？
+aftersale	aftersale	True	预约之后怎么改时间？
+aftersale	presale	False	你们展厅几点关门？
+aftersale	aftersale	True	这台设备送修大概要多久？
+aftersale	aftersale	True	我想问下我的工单进度
+aftersale	presale	False	深圳展厅还有停车位吗？
