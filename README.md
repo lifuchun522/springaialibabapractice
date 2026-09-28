@@ -17,33 +17,45 @@
 
 ## 模型通道
 
-业务代码只依赖 `ChatClient`，换模型通道是改配置，不是改代码。
+本项目**只提供一条模型通道**：DeepSeek（OpenAI 兼容协议），业务代码只依赖 `ChatClient`。
 
-| 通道 | 配置 | 环境变量 | 说明 |
-|------|------|----------|------|
-| DashScope（系列基线） | 默认 | `AI_DASHSCOPE_API_KEY` | 模型 `qwen-plus` |
-| DeepSeek（OpenAI 兼容） | profile `deepseek` | `DEEPSEEK_API_KEY` | 模型 `deepseek-flash`，基址 `https://api.deepseek.com` |
+| 项 | 值 | 配置项 |
+|----|----|--------|
+| 通道 | DeepSeek（OpenAI 兼容） | `spring.ai.model.chat=openai` |
+| 模型 | `deepseek-flash` | `spring.ai.openai.chat.options.model` |
+| 基址 | `https://api.deepseek.com` | `spring.ai.openai.base-url` |
+| 密钥 | 环境变量 `DEEPSEEK_API_KEY` | `spring.ai.openai.api-key` |
+
+系列基线是 DashScope，但本仓库当前只验证 DeepSeek 通道，所以不引入「引了但不用」的通道——
+等需要 DashScope 的章节（第 3 掌语音、第 8 掌 Embedding）再按章引入。
 
 ```bash
-# 通道一：DashScope（默认）
-export AI_DASHSCOPE_API_KEY=sk-xxxx
+export DEEPSEEK_API_KEY=sk-xxxx          # Windows: set DEEPSEEK_API_KEY=sk-xxxx
 mvn -pl digital-human spring-boot:run
-
-# 通道二：DeepSeek（不需要 DashScope 密钥，profile 已关掉整套 DashScope 自动装配）
-export DEEPSEEK_API_KEY=sk-xxxx
-mvn -pl digital-human spring-boot:run -Dspring-boot.run.profiles=deepseek
-
-# 两个通道的调用方式完全相同
 curl "http://localhost:8080/api/chat?q=用一句话介绍你自己"
 ```
 
-无有效密钥时**无法启动**：模型 SDK 会在启动期就断言 api-key 非空（`DashScope API key must be set` /
-`OpenAI API key must be set`）。这是刻意的启动期校验——密钥不对，就不要让服务假装健康地跑起来。
+无密钥时**无法启动**：模型 SDK 会在启动期断言 api-key 非空（`OpenAI API key must be set`）。
+这是刻意的启动期校验——密钥不对，就不要让服务假装健康地跑起来。
 跑测试不受影响（测试注入假 Key，不发起真实调用）：
 
 ```bash
 mvn -B -ntp test
 ```
+
+## 协作流程：Issue → 分支 → PR → main
+
+main 始终是最新的可用状态，任何一章都不直接往 main 上写：
+
+```text
+Issue（本章要落的能力与验收标准）
+   └─ 分支 chapter/NN-主题   ← 只做这一章
+        └─ PR（关联 Issue，贴真实验证证据）
+             └─ 合并进 main
+```
+
+分支名沿用系列文章里的约定：`chapter/01-value-selection`、`chapter/03-digital-human-demo` 等。
+提交信息用 `type(chNN): 描述`，一次提交只对应一掌。
 
 ## 密钥规范
 
