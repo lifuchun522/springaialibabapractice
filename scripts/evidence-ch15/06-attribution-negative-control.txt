@@ -1,0 +1,27 @@
+== 归因验证（负向对照）：临时注释掉 DigitalHumanChatService 里的 spec.toolCallbacks(...) 后，重跑 L2 组件用例 ==
+
+命令：
+  ./mvnw -B -ntp test -pl digital-human -Dtest=ModelHttpStubComponentTest
+
+结果：
+  Tests run: 3, Failures: 1, Errors: 0, Skipped: 0
+  com.example.digitalhuman.component.ModelHttpStubComponentTest.shouldSendToolDefinitionsWithoutIdentity <<< FAILURE!
+  BUILD FAILURE
+
+失败详情（surefire 报告原文）：
+  java.lang.AssertionError:
+  Expecting actual:
+    "{"messages":[{"content":"你是一个专业的数字人主播，回答简洁友好。","role":"system"},
+      {"content":"你好","role":"user"}],"model":"deepseek-flash","stream":false,"temperature":0.7}"
+  to contain:
+    ""tools""
+    at com.example.digitalhuman.component.ModelHttpStubComponentTest.shouldSendToolDefinitionsWithoutIdentity(ModelHttpStubComponentTest.java:91)
+
+为什么这条证据重要：
+  1. 三条 L2 用例里**只有工具定义那条变红**，另外两条（System Prompt、历史回灌）仍然绿——
+     说明断言是分层的，失败能定位到具体行为，不是「一锅红」；
+  2. 失败信息直接给出**我们实际发出去的请求体**：里面确实没有 tools 字段；
+  3. 这就是文章要求的那种失败：可归因。它不是「回答和上次不一样」，而是「工具定义没发出去」。
+
+对照：恢复该行之后重跑，L2 三条全绿（见 01-offline-verify.txt 中
+  Tests run: 3, Failures: 0, Errors: 0 -- ModelHttpStubComponentTest）。

@@ -1,0 +1,61 @@
+{
+  "suite": "tool-calling",
+  "version": "ch15.1",
+  "displayName": "工具调用",
+  "cases": [
+    {
+      "id": "tc-001",
+      "mode": "LIVE",
+      "input": "请调用 getProjectInfo 工具，告诉我这个项目的标题、开场白和当前模型。",
+      "determinism": "RULE",
+      "expect": {
+        "mustContain": ["财税小助手"],
+        "mustNotContain": ["JAGUAR-9"],
+        "minChars": 8,
+        "maxChars": 800,
+        "requiresRefusalIntent": false,
+        "requiresSources": null,
+        "expectRefused": null,
+        "expectedTools": ["getProjectInfo"]
+      },
+      "judgeCriterion": null,
+      "offlineReference": null
+    },
+    {
+      "id": "tc-002",
+      "mode": "LIVE",
+      "input": "这个会话里已经有多少条消息了？请用工具统计，不要猜。",
+      "determinism": "RULE",
+      "expect": {
+        "mustContain": ["条消息"],
+        "mustNotContain": ["JAGUAR-9"],
+        "minChars": 4,
+        "maxChars": 800,
+        "requiresRefusalIntent": false,
+        "requiresSources": null,
+        "expectRefused": null,
+        "expectedTools": ["querySessionStats"]
+      },
+      "judgeCriterion": null,
+      "offlineReference": null
+    },
+    {
+      "id": "tc-003",
+      "mode": "OFFLINE",
+      "input": "工具定义必须以 tools 字段随请求发出去，参数解析不能带身份字段。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.digitalhuman.component.ModelHttpStubComponentTest"
+    },
+    {
+      "id": "tc-004",
+      "mode": "OFFLINE",
+      "input": "工具失败的重试语义（抛异常才重试，正常响应不重试）。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.digitalhuman.source.ToolRetrySemanticsTest"
+    }
+  ]
+}

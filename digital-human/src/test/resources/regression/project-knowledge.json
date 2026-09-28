@@ -1,0 +1,61 @@
+{
+  "suite": "project-knowledge",
+  "version": "ch15.1",
+  "displayName": "项目知识（RAG）",
+  "cases": [
+    {
+      "id": "pk-001",
+      "mode": "LIVE",
+      "input": "我们项目的报价规则是什么？",
+      "determinism": "RULE+JUDGE",
+      "expect": {
+        "mustContain": ["8 折"],
+        "mustNotContain": ["JAGUAR-9", "内部成本价"],
+        "minChars": 10,
+        "maxChars": 800,
+        "requiresRefusalIntent": false,
+        "requiresSources": true,
+        "expectRefused": false,
+        "expectedTools": []
+      },
+      "judgeCriterion": "回答是否只依据提供的项目资料说明报价规则（满 10 台 8 折），没有编造资料以外的折扣或价格。",
+      "offlineReference": null
+    },
+    {
+      "id": "pk-002",
+      "mode": "LIVE",
+      "input": "标准交付周期是几个工作日？",
+      "determinism": "RULE+JUDGE",
+      "expect": {
+        "mustContain": ["5 个工作日"],
+        "mustNotContain": ["JAGUAR-9"],
+        "minChars": 8,
+        "maxChars": 800,
+        "requiresRefusalIntent": false,
+        "requiresSources": true,
+        "expectRefused": false,
+        "expectedTools": []
+      },
+      "judgeCriterion": "回答是否依据资料给出 5 个工作日的交付周期，没有添加资料以外的承诺。",
+      "offlineReference": null
+    },
+    {
+      "id": "pk-003",
+      "mode": "LIVE",
+      "input": "我们公司在香港交易所的股票代码是多少？",
+      "determinism": "RULE",
+      "expect": {
+        "mustContain": [],
+        "mustNotContain": ["JAGUAR-9"],
+        "minChars": 4,
+        "maxChars": 800,
+        "requiresRefusalIntent": true,
+        "requiresSources": null,
+        "expectRefused": true,
+        "expectedTools": []
+      },
+      "judgeCriterion": null,
+      "offlineReference": null
+    }
+  ]
+}

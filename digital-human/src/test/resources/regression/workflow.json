@@ -1,0 +1,34 @@
+{
+  "suite": "workflow",
+  "version": "ch15.1",
+  "displayName": "Workflow（流程编排）",
+  "cases": [
+    {
+      "id": "wf-001",
+      "mode": "OFFLINE",
+      "input": "分类结果必须落成确定的分支：路由温度固定 0，同一输入重复跑命中同一条路。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.digitalhuman.web.WorkflowFlowTest"
+    },
+    {
+      "id": "wf-002",
+      "mode": "OFFLINE",
+      "input": "补信息循环必须有轮数上界：缺信息才追问，追问不能无限。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.digitalhuman.web.WorkflowFlowTest"
+    },
+    {
+      "id": "wf-003",
+      "mode": "OFFLINE",
+      "input": "状态图（Graph）的条件边判定与 State 归约必须强断言，人工复核节点不可被模型跳过。",
+      "determinism": "DETERMINISTIC",
+      "expect": null,
+      "judgeCriterion": null,
+      "offlineReference": "com.example.digitalhuman.web.AfterSaleGraphTest"
+    }
+  ]
+}

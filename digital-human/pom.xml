@@ -100,6 +100,33 @@
         </dependency>
 
         <!--
+          第 15 掌：L2 组件层把 mock 边界从 ChatModel 撤到 HTTP 层。
+          MockWebServer 是「可观测的替身」——它让我们看到**我们发出去的请求**长什么样
+          （工具定义在不在、System Prompt 有没有带、历史有没有回灌），
+          而不是假设「对方会回什么」。版本由 spring-boot-dependencies 管。
+        -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>mockwebserver</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!--
+          第 15 掌：L3 集成层用 Testcontainers 起真实依赖。
+          本仓库的真源是 MySQL + Flyway（不是 pgvector），所以容器也换 MySQL：
+          这一层只验证「配置与连接真的能起来」，不验证回答质量。
+        -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
           第 13 掌：服务发现。注册中心是**可选中间层**——
           本地单实例开发用配置里的静态实例表，多实例/扩缩容时才需要 Nacos；
           Nacos 不可用时明确告警并退回静态表，主服务不会因为注册中心挂掉而不可用。

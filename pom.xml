@@ -26,6 +26,22 @@
              v2.0.0-M1.1 属 Pre-release，只作观察线，不进生产 -->
         <spring-ai.version>1.1.2</spring-ai.version>
         <spring-ai-alibaba.version>1.1.2.2</spring-ai-alibaba.version>
+
+        <!--
+          第 15 掌：五层测试的 tag 隔离。
+          默认只跑离线层（L1 单元 + L2 组件）——它必须离线、可重复、失败即可信：
+
+              ./mvnw -B -ntp clean verify                       # CI：L1 + L2，阻断合并
+              ./mvnw -B -ntp verify -Dsurefire.groups=integration -Dsurefire.excludedGroups=   # L3 真实依赖
+              ./mvnw -B -ntp verify -Dsurefire.groups=eval -Dsurefire.excludedGroups=          # L4 离线回归评测
+              ./mvnw -B -ntp verify -Dsurefire.groups=eval-live -Dsurefire.excludedGroups=     # L5 在线评测
+
+          为什么用属性而不是写死在插件里：写死之后「跑一次集成测试」就得改 pom 再改回来，
+          而这类改动迟早会被顺手提交。评测层单独跑，不是因为它慢，而是因为它的失败原因
+          可能是环境或模型——混进 CI 只会让 CI 的红绿失去意义。
+        -->
+        <surefire.groups></surefire.groups>
+        <surefire.excludedGroups>integration,eval,eval-live</surefire.excludedGroups>
     </properties>
 
     <modules>
@@ -138,6 +154,19 @@
                 <artifactId>annotations</artifactId>
                 <version>24.0.1</version>
             </dependency>
+
+            <!--
+              第 15 掌引入 L2 组件层的桩服务器。这一条不是「门禁拦住的东西」，而是**门禁没管的东西**：
+              spring-boot-dependencies 管 okhttp 本体，却不管 mockwebserver，所以子模块里
+              不写版本号会直接构建失败（'dependencies.dependency.version' is missing）。
+              处置是显式钉到与依赖树里 okhttp 相同的 4.12.0——版本对齐这件事，
+              门禁只会提醒你「已经不一致了」，不会替你选一个版本。
+            -->
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>mockwebserver</artifactId>
+                <version>4.12.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -152,6 +181,19 @@
         </pluginManagement>
 
         <plugins>
+            <!--
+              第 15 掌：tag 隔离落在 Surefire 上。
+              排除表来自上面的 ${surefire.excludedGroups}，默认值把 integration/eval/eval-live 挡在 CI 之外。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <groups>${surefire.groups}</groups>
+                    <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                </configuration>
+            </plugin>
+
             <!-- 环境与版本对齐门禁：基线不齐，后面每一掌都在还债 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
