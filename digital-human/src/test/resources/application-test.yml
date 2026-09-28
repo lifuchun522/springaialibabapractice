@@ -12,6 +12,12 @@ spring:
   flyway:
     enabled: false
     locations: classpath:db/migration
+  # 图检查点表不在 JPA 实体里，Hibernate 不会建；用与 Flyway V6 等价的 H2 版建一次。
+  # 这样测试跑的就是**生产同一份 MysqlCheckpointSaver**，而不是换成内存 saver 糊过去。
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:graph-schema.sql
   ai:
     mcp:
       client:

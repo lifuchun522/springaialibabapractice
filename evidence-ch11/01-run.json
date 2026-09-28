@@ -1,0 +1,1 @@
+{"threadId":"3376ddbbcb014952","status":"INTERRUPTED","executedNodes":["intent","biz","risk"],"state":{"intent":"REFUND","knowledgeHits":"来源=售后政策.md#0 签收后 7 天内可无理由退款，已拆封商品需人工审核。送修需提供设备序列号，返修时效 5 到 7 个工作日。展厅参观免费，工作日九点到十八点开放，周一闭馆。","bizRecords":"com.alibaba.cloud.ai.graph.GraphResponse@121087b1","riskLevel":"HIGH","nodeLog":"intent | knowledge | risk"},"reply":""}
