@@ -45,10 +45,12 @@ public class AuditingToolCallback implements ToolCallback {
     private final ExecutorService executor;
     private final long timeoutMs;
     private final int maxRetries;
+    /** 观测入口；为 null 表示这条链路不采集（单测与不关心观测的调用方）。 */
+    private final com.example.digitalhuman.observability.ObservedOperation observed;
 
     public AuditingToolCallback(ToolCallback delegate, ToolCallAuditRepository audits,
                                 ExecutorService executor, long timeoutMs) {
-        this(delegate, audits, executor, timeoutMs, NO_RETRY);
+        this(delegate, audits, executor, timeoutMs, NO_RETRY, null);
     }
 
     /**
@@ -57,11 +59,19 @@ public class AuditingToolCallback implements ToolCallback {
      */
     public AuditingToolCallback(ToolCallback delegate, ToolCallAuditRepository audits,
                                 ExecutorService executor, long timeoutMs, int maxRetries) {
+        this(delegate, audits, executor, timeoutMs, maxRetries, null);
+    }
+
+    /** 第 17 掌加的构造：带上观测入口，让工具调用自动进调用树与指标。 */
+    public AuditingToolCallback(ToolCallback delegate, ToolCallAuditRepository audits,
+                                ExecutorService executor, long timeoutMs, int maxRetries,
+                                com.example.digitalhuman.observability.ObservedOperation observed) {
         this.delegate = delegate;
         this.audits = audits;
         this.executor = executor;
         this.timeoutMs = timeoutMs;
         this.maxRetries = Math.max(0, maxRetries);
+        this.observed = observed;
     }
 
     @Override
@@ -81,11 +91,27 @@ public class AuditingToolCallback implements ToolCallback {
 
     @Override
     public String call(String toolInput, ToolContext toolContext) {
+        // 第 17 掌：工具是「必经之路」之一，埋点站在这里而不是各业务代码里——
+        // 只要工具真的被执行，就一定有记录（含失败分类 TOOL_ERROR）。
+        // observed 允许为空：单测与老路径不注入观测，既不污染测试也不想让观测变成必需依赖。
+        if (observed == null) {
+            return executeWithRetry(toolInput, toolContext);
+        }
+        return observed.observe("genai.tool", "tool",
+                java.util.Map.of("tool.name", delegate.getToolDefinition().name()),
+                () -> executeWithRetry(toolInput, toolContext));
+    }
+
+    private String executeWithRetry(String toolInput, ToolContext toolContext) {
         for (int attempt = 0; ; attempt++) {
             long startedAt = System.nanoTime();
             try {
                 String result = callWithTimeout(toolInput, toolContext);
                 audit(toolInput, toolContext, result, ToolCallAudit.Status.OK, elapsedMs(startedAt));
+                // 第 17 掌：这一行是在工具执行池线程上打出来的。它和入口那行日志共享同一个 traceId，
+                // 就是「身份跨线程池传播」最直观的证据（配置见 ContextAwareExecutorService）。
+                log.info("[tool] {} 执行完成 status=OK elapsed={}ms", delegate.getToolDefinition().name(),
+                        elapsedMs(startedAt));
                 return result;
             } catch (TimeoutException ex) {
                 String message = "工具执行超过 " + timeoutMs + "ms，已被中止；请稍后重试或改用其它方式。";

@@ -1,0 +1,21 @@
+﻿== 跨进程续链验证：调用方带 W3C traceparent，服务端是否接续 ==
+
+请求：
+  curl -D - -H "traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" \
+       "http://127.0.0.1:8090/api/chat?q=一句话"
+
+响应头：
+  X-Trace-Id: 4bf92f3577b34da6a3ce929d0e0e4736        ← 与调用方传入的 trace id 一致
+
+日志（服务端）：
+  23:01:25.501 INFO [4bf92f3577b34da6a3ce929d0e0e4736,unknown,unknown,unknown:unknown] \
+      c.e.d.o.TraceContextFilter - GET /api/chat -> 200 in 1317ms
+
+结论：
+  1. 跨进程续链走的是标准协议（W3C traceparent），由框架在 servlet 栈里完成接续；
+  2. 服务端返回的 X-Trace-Id 就是接续后的号，排查时能直接拿着调用方的号来查；
+  3. 这也解释了为什么过滤器**优先用框架当前 span 的 traceId**：
+     自定义头与框架的 MDC 写的是同一个键，谁后写谁赢——只有一个来源才不会互相覆盖。
+
+注意（诚实记录）：MockMvc 的单测里断言不了这条链路（过滤器顺序与真实容器不同），
+所以它是用真实运行验证的；单测断言的是「应用内部一致」（响应头 == 调用树 == 诊断接口）。

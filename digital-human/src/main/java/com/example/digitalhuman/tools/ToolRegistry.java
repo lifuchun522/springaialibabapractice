@@ -12,6 +12,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.example.digitalhuman.observability.ObservedOperation;
 import com.example.digitalhuman.repository.ToolCallAuditRepository;
 
 /**
@@ -37,6 +38,8 @@ public class ToolRegistry {
     private final ExecutorService toolExecutor;
     private final long timeoutMs;
     private final int maxRetries;
+    /** 第 17 掌：工具调用的观测入口（进调用树与指标）。 */
+    private final ObservedOperation observed;
 
     public ToolRegistry(ReadOnlyTools readOnlyTools,
                         WriteTools writeTools,
@@ -44,11 +47,13 @@ public class ToolRegistry {
                         ExecutorService toolExecutor,
                         @Value("${digital-human.tools.timeout-ms:3000}") long timeoutMs,
                         @Value("${digital-human.tools.max-retries:2}") int maxRetries,
+                        ObservedOperation observed,
                         ObjectProvider<ToolCallbackProvider> remoteToolProviders) {
         this.audits = audits;
         this.toolExecutor = toolExecutor;
         this.timeoutMs = timeoutMs;
         this.maxRetries = Math.max(0, maxRetries);
+        this.observed = observed;
         this.readOnlyCallbacks = wrap(ToolCallbacks.from(readOnlyTools));
         this.writeCallbacks = wrap(ToolCallbacks.from(writeTools));
         this.remoteCallbacks = wrapRemote(remoteToolProviders);
@@ -85,7 +90,7 @@ public class ToolRegistry {
     private ToolCallback[] wrap(ToolCallback[] callbacks) {
         return Arrays.stream(callbacks)
                 .map(callback -> (ToolCallback) new AuditingToolCallback(
-                        callback, audits, toolExecutor, timeoutMs, maxRetries))
+                        callback, audits, toolExecutor, timeoutMs, maxRetries, observed))
                 .toArray(ToolCallback[]::new);
     }
 }

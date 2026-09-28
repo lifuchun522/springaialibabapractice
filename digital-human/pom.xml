@@ -152,6 +152,27 @@
         </dependency>
 
         <!--
+          第 17 掌：可观测。
+          三条通道各司其职，缺一条就会出现「看得见指标但追不到链路」或「有 span 但没有可聚合的数」：
+          - micrometer-tracing-bridge-otel：把 Observation 接到 OpenTelemetry 的 trace 体系；
+          - opentelemetry-exporter-otlp：把 span 送出去（本环境没有采集后端，见 ch17 验收记录的说明）；
+          - micrometer-registry-prometheus：把指标暴露成 /actuator/prometheus，供看板与告警抓取。
+          版本一律由 spring-boot-dependencies 管。
+        -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <!--
           第 13 掌：服务发现。注册中心是**可选中间层**——
           本地单实例开发用配置里的静态实例表，多实例/扩缩容时才需要 Nacos；
           Nacos 不可用时明确告警并退回静态表，主服务不会因为注册中心挂掉而不可用。

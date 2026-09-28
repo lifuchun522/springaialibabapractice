@@ -239,6 +239,10 @@ export DIGITAL_HUMAN_DB_PASSWORD=root
 | 16 | 分层就是分目录 | 用 ArchUnit 把依赖方向写成规则，**第一次跑就抓到真实违规**：`ToolController` 直接注入 repository 查库（授权/归属/查询三件事混进 HTTP 层）；同一轮还暴露我自己的规则**写宽了**（`..web..` 把 Spring 的 `org.springframework.web..` 一起匹配，误报 23 处） | 新增 `ToolAuditService` 把用例收回 service 层；规则改成精确包名 `com.example.digitalhuman.web..`——门禁也是代码，宽窄都要拿真实违规校一次 |
 | 16 | 本地跑得好就说明服务没问题 | 真实流式请求打出框架警告：`default Spring MVC SimpleAsyncTaskExecutor … not suitable for production use under load`（每请求新建线程、无上限无队列）；**功能全对，交付标准不过**，任何功能测试都挡不住它 | 配 `WebAsyncConfig`：有界线程池（4/32/200）+ 显式 5 分钟超时 + 优雅停机；修复后同一条真实链路的日志里不再出现该警告 |
 | 16 | 配置外置就算完事 | compose 里写 `${APP_DEEPSEEK_API_KEY}`，没设就是空字符串——缺失被带进容器，变成第一次请求的 401（正是文章 06 链 A） | 必需项改写成 `${VAR:?提示}`：缺变量时 `docker compose config` 直接拒绝并打印「缺哪个、去哪儿声明」；探针同时从 `/actuator/health` 换成 `/actuator/health/readiness` |
+| 17 | 有了 traceId 就算打通链路 | 同一请求出现**两个号**：响应头/调用树是自己生成的 `a6d63cf3…`，日志里的 `traceId` 却是框架的 `6d5f033b…`——因为 Micrometer 的 correlation 装饰器**也往 MDC 写同一个键**，谁后写谁赢 | 过滤器改为**优先取框架当前 span 的 traceId**（与文章 V1 一致），身份只有一个来源；修后响应头 == 日志 == 审计表 == 调用树 |
+| 17 | 工具审计与日志天然能对上 | `ConversationRequest` 自己生成 12 位随机号当 traceId，而 HTTP 侧用 32 位号：一次请求响应头 `9a3abf6d…`、`tool_call_audit.trace_id` 却是 `c7c2b3418b6c`——**两张表永远 join 不上**，而工具审计是「模型到底调了什么」的唯一真相 | traceId 先继承请求上下文，没有上下文才自生成；断言钉住，修后审计表与响应头同号 |
+| 17 | 埋点加上就有数据 | 失败分类的指标被 **Prometheus 静默丢弃**：同名指标的标签键集合必须一致，只在失败时补 `failure.type` 会让带该标签的 meter 整批作废——只有一行 WARN，业务完全正常 | 建指标时就写 `failure.type=none`，失败时改值不改键；修后 `failure_type="INPUT_INVALID"` 与 `"none"` 都能查 |
+| 17 | 失败请求一定有痕迹 | 项目不存在/入参非法这类**早失败在业务埋点之前就抛了**，诊断面上是一棵空树；补了 http 层之后它的分类仍是空的——因为 `@ExceptionHandler` 在 Servlet 内部就把异常转成了响应，过滤器看不到异常 | 过滤器给整个请求加 http 层调用，并**按响应状态码分类**（HTTP 层的事实本来就是状态码）；早失败也留下一棵带 `INPUT_INVALID` 的树 |
 
 
 ## 九、能学到什么：本仓库能核验到什么
@@ -268,21 +272,82 @@ export DIGITAL_HUMAN_DB_PASSWORD=root
 
 ## 十、技术基线：写在文档里不算数，过不了 `validate` 才算
 
+**三条链路，而不是一条**：管理链路只写配置，对话链路才碰模型与音频，注册链路只管「谁能被找到」。
+三条链路分开画，是因为「加一个能力该落在哪条链路」是这张图要回答的第一个问题——
+平铺成一张组件清单，就答不出它了。
+
 ```mermaid
-flowchart LR
-    U["浏览器"] -->|"HTTP + SSE"| API
+flowchart TB
+    subgraph CLIENT["客户端"]
+        AUI["运营控制台<br/>登录 · 项目 CRUD · 配置 · 发布"]
+        RUI["开放运行入口<br/>登记用户名 · 字幕 · 声音 · 标签 · 形象"]
+    end
+
     subgraph APP["digital-human：Spring Boot 3.5.10"]
-        API["REST API<br/>auth / projects / chat / rag / agent"]
+        API["REST + SSE<br/>auth / projects / chat / rag / agent"]
+        CFG["配置目录与发布<br/>音色 · 形象 · 立场 · 知识库 · MCP · A2A"]
+        VOICE["语音适配层<br/>合成 · 识别 · 临时凭证"]
         AGENT["ReactAgent 主脑<br/>Hooks 边界 + 拦截器事件流"]
         TOOLS["工具层<br/>只读 · 写+确认令牌 · 审计/超时/重试"]
         RAG["项目知识库<br/>元数据契约隔离"]
+        DISC["注册发现<br/>A2A 实例 + MCP 服务清单"]
+        SNAP[("配置快照<br/>发布版本不可变")]
     end
-    AGENT -->|"ChatClient"| LLM["DeepSeek<br/>OpenAI 兼容"]
+
+    subgraph EXT["外部能力"]
+        LLM["DeepSeek<br/>OpenAI 兼容"]
+        TTSX["阿里云 TTS<br/>外部依赖"]
+        ASRX["阿里云 ASR<br/>外部依赖"]
+    end
+
+    subgraph RTC["实时交互层 · 第 19 掌预留不部署"]
+        LKS["livekit-server<br/>WebRTC 信令 + 媒体转发"]
+        LKA["livekit-agent<br/>口型 / 表情推理"]
+    end
+
+    subgraph REG["注册层"]
+        NACOS["Nacos<br/>官方镜像 + 复用 MySQL"]
+        NACOSDB[("nacos_config<br/>同一个 MySQL 实例")]
+    end
+
+    subgraph PEERS["同域服务"]
+        MCP["digital-human-mcp<br/>展厅预约：独立进程 + 独立库"]
+        KA["knowledge-agent<br/>A2A 能力声明"]
+    end
+
+    DB[("MySQL 8<br/>业务库 · Flyway V1–V6")]
+
+    AUI -->|"HTTP"| API
+    API --> CFG
+    CFG --> SNAP
+    RUI -->|"HTTP + SSE"| API
+    API --> AGENT
+    AGENT -->|"ChatClient"| LLM
     AGENT --> TOOLS
     AGENT --> RAG
-    TOOLS -->|"MCP STREAMABLE /mcp"| MCP["digital-human-mcp<br/>展厅预约：独立进程 + 独立库"]
-    APP --> DB[("MySQL 8<br/>Flyway V1–V5")]
+    API -->|"合成 / 识别"| VOICE
+    VOICE --> TTSX
+    VOICE --> ASRX
+    TOOLS -->|"MCP STREAMABLE /mcp"| MCP
+    DISC -->|"能力声明 + 任务"| KA
+    DISC --> NACOS
+    MCP -.->|"清单登记"| NACOS
+    KA -.->|"实例注册"| NACOS
+    NACOS --> NACOSDB
+    APP --> DB
+    MCP --> DB
+    RUI -.->|"预留：音频通道"| LKS
+    LKS -.->|"预留：工作端"| LKA
 ```
+
+图注：这张图回答的是**「加一个能力该落在哪条链路」**——实线是本仓真实在跑的链路，
+虚线是第 19 掌的预留位。管理链路只写配置、不出网；对话链路才碰模型与音频；
+注册链路只管「谁能被找到」，不承载工具 schema 与业务配置的真值。
+
+> **虚线 = 预留位，不是「已经能用」。** `livekit-server` / `livekit-agent` 在第 19 掌只入图不部署
+> （需要算法镜像与 GPU），真实口型与表情推理仍是欠账；TTS / ASR 是外部依赖，
+> 本仓只交付供应商无关的适配层；`nacos` 只承载注册与发现，**不承载工具 schema 与业务配置的真值**。
+> 逐条口径见 [`docs/ch19-数字人功能升级.md`](docs/ch19-数字人功能升级.md) 第八节。
 
 | 项 | 取值 |
 |----|------|
@@ -335,8 +400,9 @@ MCP_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human_ext?...' ./mvnw -pl digit
 | 14 | 损则有孚 · 溯源源码 | `chapter/14-source-pr` | `ch14` | ✅ 行为钉到 1.1.2.2 的行号 + 最小复现 + 上游 Issue 草稿（[文章](https://cloud.tencent.com/developer/article/2752091)） |
 | 15 | 龙战于野 · 试炼评测 | `chapter/15-eval-guard` | `ch15` | ✅ 五层测试（L1 单元 / L2 MockWebServer 打桩 / L3 Testcontainers / L4 快照重放 / L5 在线评测）+ 六类回归集 24 条 + Judge 校准（[文章](https://cloud.tencent.com/developer/article/2752089)） |
 | 16 | 履霜冰至 · 立派服务 | `chapter/16-spring-service` | `ch16` | ✅ 依赖方向门禁（ArchUnit 6 条）+ 启动期部署契约 + 健康分组（liveness / readiness）+ SSE 心跳与有界异步执行器 + 生产边界（`/internal/llm/v1` 在 prod 下 404）+ 可执行接口契约（[文章](https://cloud.tencent.com/developer/article/2752087)） |
-| 17 | 羝羊触藩 · 观星治理 | `chapter/17-observability-admin` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752086)与视频已发布） |
+| 17 | 羝羊触藩 · 观星治理 | `chapter/17-observability-admin` | `ch17` | ✅ 身份四元组贯穿（traceId/projectId/sessionId/threadId）+ 跨线程池与跨进程传播 + http/model/tool/rag 四层调用树 + 九类失败分类 + 诊断接口与 Prometheus 指标（[文章](https://cloud.tencent.com/developer/article/2752086)） |
 | 18 | 神龙摆尾 · 登云 K8s | `chapter/18-k8s-production` | — | ⬜ 待做（[文章](https://cloud.tencent.com/developer/article/2752084)与视频已发布） |
+| 19 | 震雷百里 · 数字人功能升级 | `chapter/19-digital-human-upgrade` | — | 🚧 图与方案已就绪（[ch19 文档](docs/ch19-数字人功能升级.md)、[OpenSpec 变更](openspec/changes/ch19-digital-human-upgrade/)）：五组件入图（livekit-server / livekit-agent / tts / asr / nacos）+ 三条链路 + 主流程五步；Nacos 与 TTS/ASR 的实现待第二步 |
 
 ### 交付方式：Issue → 分支 → PR → main → tag
 

@@ -147,7 +147,21 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # metrics/prometheus 是第 17 掌加的：失败分类要能按类型聚合，
+        # 只暴露 health/info 的话，「同类失败发生了多少次」这个问题只能靠翻日志数。
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: digital-human
+  tracing:
+    sampling:
+      # 本仓库是单机演示规模：全采。真实环境按流量调，别把采样率留在 1.0 当默认值抄走。
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      # 采集后端地址；本环境没有起 collector，span 会按 OTLP 协议尝试上报并失败——
+      # 这是刻意的：配置留在配置里，证据用本地调用树与指标出（见 docs/ch17-验收记录.md）。
+      endpoint: ${OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}
   endpoint:
     health:
       # 第 16 掌：探针要能区分「进程活着」和「关键配置齐了」。
@@ -167,5 +181,9 @@ management:
           include: configReadiness,db,diskSpace
 
 logging:
+  # 第 17 掌：日志里带上身份四元组。这一行是「一眼看出这几条日志是同一次请求」的最小实现，
+  # 也是文章 01 章那三行互不相认的日志的直接解药。缺省写 - 而不是去掉字段，便于肉眼对齐。
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{traceId:--},%X{projectId:--},%X{sessionId:--},%X{threadId:--}] %logger{28} - %msg%n"
   level:
     com.example.digitalhuman: info

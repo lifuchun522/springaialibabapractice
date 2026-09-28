@@ -45,6 +45,8 @@ public class WebAsyncConfig implements WebMvcConfigurer {
         executor.setMaxPoolSize(properties.asyncMaxPoolSize());
         executor.setQueueCapacity(properties.asyncQueueCapacity());
         executor.setThreadNamePrefix("sse-async-");
+        // 第 17 掌：SSE 由异步执行器托管，身份必须跟着任务一起过来，否则流式那一半日志没有 traceId
+        executor.setTaskDecorator(new com.example.digitalhuman.observability.ContextAwareTaskDecorator());
         // 优雅停机：发版时不要在半句话上把连接掐断
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(10);

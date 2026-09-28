@@ -28,16 +28,29 @@ public class RagAnswerService {
     private final ChatClient chatClient;
     private final ProjectKnowledgeRetriever retriever;
     private final com.example.digitalhuman.config.RagConfig.RagProperties ragProperties;
+    /** 第 17 掌：检索层的观测入口。 */
+    private final com.example.digitalhuman.observability.ObservedOperation observed;
 
     public RagAnswerService(ChatClient chatClient,
                             ProjectKnowledgeRetriever retriever,
-                            com.example.digitalhuman.config.RagConfig.RagProperties ragProperties) {
+                            com.example.digitalhuman.config.RagConfig.RagProperties ragProperties,
+                            com.example.digitalhuman.observability.ObservedOperation observed) {
         this.chatClient = chatClient;
         this.retriever = retriever;
         this.ragProperties = ragProperties;
+        this.observed = observed;
     }
 
     public RagAnswer answer(Long projectId, String question) {
+        // 第 17 掌：检索层同样进调用树。注意 refused（无依据拒答）在这里被分类成 RAG_EMPTY ——
+        // 它是**正常业务行为**，不是故障；把它和「检索失败」混在一个指标里，看板就永远在报假警。
+        return observed.observeWithOutcome("genai.rag.answer", "rag",
+                java.util.Map.of("project.id", String.valueOf(projectId)),
+                answer -> answer.refused() ? com.example.digitalhuman.observability.FailureType.RAG_EMPTY : null,
+                () -> answerInternal(projectId, question));
+    }
+
+    private RagAnswer answerInternal(Long projectId, String question) {
         List<Document> hits = retriever.retrieve(projectId, question);
         if (hits.isEmpty()) {
             return RagAnswer.refused("这个项目的知识库里没有和该问题相关的内容，我不能凭猜测回答。"
