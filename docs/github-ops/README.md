@@ -35,6 +35,26 @@
 | 验收 | 每条断言都要能指向一个证据文件、一条命令输出或一个 Issue/PR 编号 |
 | 死链门禁 | `python3 scripts/check-github-ops-links.py`（本目录的索引不允许有死链） |
 
+## 全量验收
+
+逐保断言、红线复检、未完成项与 CI 回归的汇总见 [`验收记录.md`](验收记录.md)。
+
+## 脚本清单
+
+| 脚本 | 用途 | 是否写远端 |
+| --- | --- | --- |
+| `scripts/gh-01-repo-baseline.sh` | 仓库 About/Topics/Features + 快照 | 写 |
+| `scripts/gh-labels.sh` | 中文标签幂等同步 + 表单引用一致性校验 | 写 |
+| `scripts/gh-discussions-audit.sh` | 讨论只读巡检（未答问答） | **只读** |
+| `scripts/gh-05-rulesets.sh` | main / tag ruleset + JSON 快照 | 写 |
+| `scripts/gh-09-project-fields.sh` | 作战盘字段幂等补齐 + 字段快照 | 写 |
+| `scripts/gh-09-project-sync.sh` | 条目加入作战盘（幂等 + 归属校验） | 写 |
+| `scripts/gh-13-seed-good-first-issues.sh` | 任务池创建（幂等） | 写 |
+| `scripts/gh-insights-snapshot.sh` | Traffic 九端点按月落盘 | **只读** |
+| `scripts/gh-insights-report.sh` | 月报生成（口径固定） | **只读** |
+| `scripts/gh-ops-metrics.sh` | 周指标四类按日归档 | **只读** |
+| `scripts/check-github-ops-links.py` | 索引死链门禁（CI 门禁之一） | 本地校验 |
+
 ## 明确不做（全系列汇总）
 
 | 不做 | 什么条件下再评估 |
