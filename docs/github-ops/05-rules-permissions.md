@@ -223,6 +223,62 @@ $ gh api repos/lifuchun522/springaialibabapractice/rulesets/24152536 --jq '{name
    **以后不再为了验证规则去创建真实的、命中受保护前缀的 tag**，
    改为读回 ruleset 定义 + 在一次性测试仓库里演练。
 
+### 4.6d 第二次紧急绕过：修一个自己打错的 tag（含三个新教训）
+
+`gh release create v0.1.0 --verify-tag` 建了 Release 之后才发现：
+本地 tag 指向的是**合并前的 `4f70065`**，而合并提交是 `7831df0`——release 页面对的提交里没有十三保的改动。
+
+按 4.6c 的同一套流程修（降级 → 强推 tag → 恢复），记下三个新教训：
+
+**教训一：读远端 tag 要用 `^{}` 拿到「它指向的提交」，直接读只会看到 tag 对象自身的 sha。**
+
+```console
+$ git ls-remote --tags origin refs/tags/v0.1.0
+39c742bbb5c99055aa28ccfb0974b104c59b6374	refs/tags/v0.1.0        ← annotated tag 对象自身的 sha
+
+$ git ls-remote --tags origin | Select-String 'v0.1.0'
+39c742bbb5c99055aa28ccfb0974b104c59b6374			refs/tags/v0.1.0
+7831df0a367a58a01fde57bcad48b43564414ca5	refs/tags/v0.1.0^{}      ← 这才是目标提交
+```
+
+`git ls-remote refs/tags/<name>` **只显示 tag 对象自己的 sha**，看起来永远像「没改成功」。
+我第一次误判成「强推失败」就是漏了这一步。核对方法二选一：
+`git ls-remote --tags origin | grep '\^{}'`，或 `gh api repos/{repo}/git/tags/<sha> --jq .object`。
+
+**教训二：ruleset 的 `enforcement` 改成 `disabled` 后，要等变更传播再动 ref。**
+第一次降级后立刻强推，仍被 `Cannot update this protected ref` 拒；隔 60 秒（并轮询读回 `disabled`）
+后重试才成功：
+
+```console
+$ gh api --method PUT .../rulesets/24152536 -f enforcement=disabled
+{"enforcement":"disabled","name":"tag-protect"}
+$ sleep 60
+$ git push --force origin refs/tags/v0.1.0
+（成功）
+$ gh api --method PUT .../rulesets/24152536 -f enforcement=active
+{"enforcement":"active","name":"tag-protect"}
+```
+
+**教训三：Release 创建后 `immutable: true`，notes 与标题都改不了。**
+
+```console
+$ gh release view v0.1.0 --json immutable
+（immutable: true —— 创建后不可修改）
+```
+
+所以「先打 tag 再合并」这种**顺序错误**的代价是永久的：那个版本的 release 页面内容对不上，
+只能靠下一个版本纠正。**固定的发版顺序**：
+
+```bash
+# 1) 先合并到 main
+gh pr merge <编号> --squash --delete-branch
+# 2) 在 main 上打 tag（先 git pull --ff-only 确认本地 main 就是远端 main）
+git switch main && git pull --ff-only
+git tag -a v0.1.1 -m "..." && git push origin v0.1.1
+# 3) 最后才建 Release
+gh release create v0.1.1 --verify-tag --generate-notes --title "v0.1.1"
+```
+
 ### 4.7 CODEOWNERS 与 owner 权限
 
 ```console

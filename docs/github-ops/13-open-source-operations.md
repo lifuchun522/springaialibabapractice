@@ -188,6 +188,47 @@ $ jq '.' docs/github-ops/metrics/2026-09-29-discussions.json
 理由：第 05 保给 `main` 立了「必须走 PR、必须过 CI、无 bypass」的规则。
 如果机器人绕过自己的规则，第 05 保就白立了——**规则刚立、机器人自己破**是最糟的示范。
 
+### 5.5 一次真实的启动即失败（本保踩到的最难的坑）
+
+工作流第一次被触发时，运行**在启动阶段就失败**，而且几乎没有线索：
+
+```console
+$ gh run list --workflow=gh-ops-weekly.yml --limit 1 --json databaseId,conclusion,event,headBranch,jobs
+{"conclusion":"failure","event":"push","headBranch":"dependabot/maven/...","jobs":[]}
+
+$ gh run view 36513341127 --log-failed
+gh: failed to get run log: log not found
+```
+
+形态特征（记住这三条，下次一眼认出）：
+
+| 现象 | 含义 |
+| --- | --- |
+| `jobs: []` | job **根本没建出来**——不是某一步失败，而是工作流整体没被接受 |
+| `--log-failed` 报 `log not found` | 没有日志可看，**报错不指向真正原因**，只能逐文件比对 |
+| `event=push` 却触发了 `on: schedule/workflow_dispatch` 的工作流 | GitHub 在分支推送时会校验分支上的所有工作流文件，校验不过就是启动失败 |
+
+根因是 `upload-artifact` 的 `path` 写成了：
+
+```yaml
+path: docs/github-ops/metrics/*-$(date -u +%Y-%m-%d)-*.json   # ← 错在这里
+```
+
+**动作（action）的 `with:` 参数不做 shell 展开**，`$(...)` 不会被求值。
+同类第二处：`gh pr create --body "..."` 的正文跨了多行，把 YAML 块标量的缩进搞乱。
+
+修法（PR [#71](https://github.com/lifuchun522/springaialibabapractice/pull/71)）：
+
+1. `path` 改成纯 glob `docs/github-ops/metrics/*.json`；
+2. PR 正文改为写临时文件后 `--body-file` 传入；
+3. 给 artifact 上传加 `if: always()` 与 `continue-on-error: true`
+   ——**归档失败不该让整个采集红灯**（采集本身成功才是关键）；
+4. 补一道门禁 `scripts/check-workflows.py` 接进 CI，检查「启动即失败」的最小充分条件：
+   顶层 `on`/`jobs`、每个 job 有 `runs-on`、动作参数里没有 `$(`、没有跨行 `--body`。
+
+这是本仓库第三道同类门禁（前两道是架构图一致性与索引死链），共同规律是：
+**静默损坏不会让任何东西失败，只会在下一次被人发现时已经晚了。**
+
 ## 六、外部传播回链清单
 
 外部文章是**入口**，不是知识仓库。规则：
