@@ -71,10 +71,18 @@ jobs:
           cat docs/github-ops/metrics/*-"$(date -u +%Y-%m-%d)"-*.json | head -c 2000 >/dev/null || true
 
       - name: 上传原始快照（artifact）
+        # 注意：upload-artifact 的 path 是 glob 模式，**不做 shell 展开**。
+        # 第一版在这里写了 `*-$(date -u +%Y-%m-%d)-*.json`，导致工作流在启动阶段直接
+        # startup_failure（连 job 都建不出来：日志为空、jobs 为空数组）。
+        # 实测记录：运行 36513341127，event=push，headBranch=dependabot/...，
+        # 输出 {"conclusion":"failure","jobs":[]} —— 这就是「启动即失败」的形态。
+        # 修法：用纯 glob，不依赖 shell 命令替换。
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: gh-ops-metrics-${{ github.run_id }}
-          path: docs/github-ops/metrics/*-$(date -u +%Y-%m-%d)-*.json
+          path: docs/github-ops/metrics/*.json
           if-no-files-found: ignore
           retention-days: 90
 
@@ -98,19 +106,26 @@ jobs:
           git commit -m "chore(gh13): weekly ops metrics snapshot $(date -u +%Y-%m-%d)"
           git push -u origin "$BRANCH"
 
+          # PR 正文写进临时文件再传：多行正文直接塞进 --body 的引号里，
+          # 会把 YAML 块标量的缩进搞乱，导致整个工作流 startup_failure（第一版就踩了）。
+          cat > /tmp/gh13-pr-body.md <<'MD'
+          本 PR 由 `gh-ops-weekly` 工作流自动创建（第 13 保）。
+
+          按第 05 保的规则，`main` 必须走 PR 合并，因此机器人不直推——它开的也是 PR。
+
+          **审这一份要看的是**：
+
+          - 访问/克隆是否首次非空（若长期为 0，按第 12 保的口径应**砍掉对应工作**，而不是继续维护）；
+          - `good first issue` 是否低于 3 个（低于就要补任务池，见第 13 保 SOP）；
+          - 是否有未标记答案的 Q&A 超过 48 小时（第 04 保的响应承诺）。
+
+          合并方式：squash。
+          MD
+
           gh pr create \
             --base main --head "$BRANCH" \
             --title "chore(gh13): 周运营指标归档 $(date -u +%Y-%m-%d)" \
-            --body "本 PR 由 \`gh-ops-weekly\` 工作流自动创建（第 13 保）。
-
-按第 05 保的规则，\`main\` 必须走 PR 合并，因此机器人不直推——它开的也是 PR。
-
-**审这一份要看的是**：
-- 访问/克隆是否首次非空（若长期为 0，按第 12 保的口径应砍掉对应工作，而不是继续维护）；
-- \`good first issue\` 是否低于 3 个（低于就要补任务池，见第 13 保 SOP）；
-- 是否有未标记答案的 Q&A 超过 48 小时（第 04 保的响应承诺）。
-
-合并方式：squash。" \
+            --body-file /tmp/gh13-pr-body.md \
             --label "模块:CI" || echo "PR 创建失败（可能已存在同名分支的 PR），请手动处理"
 
       - name: 未勾选提交时给出提示
