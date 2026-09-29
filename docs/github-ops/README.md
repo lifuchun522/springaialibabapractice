@@ -3,7 +3,8 @@
 本目录是「13太保玩转github」系列（13 篇文章 + 13 集视频）在本仓库的落地产物：
 每一保都给出**可复现的命令 + 可审计的落盘证据 + 可验收的断言**，而不是只写一篇文档。
 
-- OpenSpec 变更：[`openspec/changes/github-ops-13/`](../../openspec/changes/github-ops-13/proposal.md)
+- OpenSpec 变更（已归档）：[`openspec/changes/archive/2026-09-29-github-ops-13/`](../../openspec/changes/archive/2026-09-29-github-ops-13/proposal.md)
+- 归档后的能力规格（当前行为真源）：[`openspec/specs/`](../../openspec/specs)
 - 阅读顺序：按下表 01 → 13。每篇结构一致（改前状态 / 改后状态 / 命令输出 / 验收记录 / 明确不做）。
 
 ## 索引

@@ -165,7 +165,7 @@ ruleset 的 `required_linear_history` 保证了这一点。
   Release notes 也能按保次分类。
 
 分支命名规则（`githubops/NN-<主题>`）本身不变，后续若要细分仍按此开。
-这条差异已同步写进 `openspec/changes/github-ops-13/design.md`。
+这条差异已同步写进 `openspec/changes/archive/2026-09-29-github-ops-13/design.md`。
 
 ## 六、明确不做
 
