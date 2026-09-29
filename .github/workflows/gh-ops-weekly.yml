@@ -1,0 +1,120 @@
+name: gh-ops-weekly
+
+# 第 13 保：运营指标周归档
+#
+# 与教程口径的一处**有意差异**（必须说明，否则会被下一个人当成 bug 改回去）：
+#   教程让工作流直接 `git commit && git push` 到 main。
+#   但第 05 保给 main 立了规则：**必须走 PR、必须过 CI、且没有任何 bypass**。
+#   如果这个机器人绕过自己的规则，第 05 保就白立了——「规则刚立、机器人自己破」是最糟的示范。
+#   所以这里改为：
+#     - 默认只**产出草稿**（artifact + 步骤摘要），供人看一眼再决定要不要提交；
+#     - 需要归档时用 `workflow_dispatch` 手动触发并勾选 commit_draft=true，
+#       由工作流**开一个 PR**（而不是直推 main），人审后 squash 合并。
+#
+# 权限：contents: write 是开 PR 需要的；**不请求** pull_request 写权限之外的多余范围。
+# 无改动时不跑 commit 分支，因此不会因为「没有新数据」而红灯。
+
+on:
+  schedule:
+    # 每周一 01:00 UTC = 09:00 Asia/Shanghai
+    - cron: '0 1 * * 1'
+  workflow_dispatch:
+    inputs:
+      commit_draft:
+        description: '是否开 PR 提交草稿（false 则只产出 artifact）'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-ops-weekly
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: 采集运营指标
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 采集四类指标
+        env:
+          # 用内置 token 即可；Traffic 端点需要 repo 读权限
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: lifuchun522
+          REPO_NAME: springaialibabapractice
+        run: bash scripts/gh-ops-metrics.sh
+
+      - name: 生成本期草稿摘要
+        run: |
+          {
+            echo "## 本期运营指标草稿（$(date -u +%Y-%m-%d)）"
+            echo
+            echo "> 指标只作为判断输入，**不作为考核目标**。"
+            echo
+            echo "| 项 | 值 |"
+            echo "| --- | --- |"
+            echo "| 14 天访问次数 | $(jq -r '.count // "缺"' docs/github-ops/metrics/*-views.json 2>/dev/null | head -1) |"
+            echo "| 独立访客 | $(jq -r '.uniques // "缺"' docs/github-ops/metrics/*-views.json 2>/dev/null | head -1) |"
+            echo "| 14 天克隆次数 | $(jq -r '.count // "缺"' docs/github-ops/metrics/*-clones.json 2>/dev/null | head -1) |"
+            echo "| 开放 good first issue | $(jq -r 'length' docs/github-ops/metrics/*-gfi.json 2>/dev/null | tail -1) |"
+            echo "| Release 数（最近 10） | $(jq -r 'length' docs/github-ops/metrics/*-releases.json 2>/dev/null | tail -1) |"
+            echo "| 讨论总数 | $(jq -r '.data.repository.discussions.totalCount // "缺"' docs/github-ops/metrics/*-discussions.json 2>/dev/null | tail -1) |"
+            echo "| 未标记答案的问答 | $(jq -r '[.data.repository.discussions.nodes[] | select(.category.isAnswerable and (.isAnswered|not))] | length' docs/github-ops/metrics/*-discussions.json 2>/dev/null | tail -1) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat docs/github-ops/metrics/*-"$(date -u +%Y-%m-%d)"-*.json | head -c 2000 >/dev/null || true
+
+      - name: 上传原始快照（artifact）
+        uses: actions/upload-artifact@v4
+        with:
+          name: gh-ops-metrics-${{ github.run_id }}
+          path: docs/github-ops/metrics/*-$(date -u +%Y-%m-%d)-*.json
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: 有改动则开 PR 提交草稿
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.commit_draft == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          git add docs/github-ops/metrics
+
+          if git diff --cached --quiet; then
+            echo "no changes to commit"
+            exit 0
+          fi
+
+          BRANCH="chore/gh13-metrics-$(date -u +%Y%m%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git commit -m "chore(gh13): weekly ops metrics snapshot $(date -u +%Y-%m-%d)"
+          git push -u origin "$BRANCH"
+
+          gh pr create \
+            --base main --head "$BRANCH" \
+            --title "chore(gh13): 周运营指标归档 $(date -u +%Y-%m-%d)" \
+            --body "本 PR 由 \`gh-ops-weekly\` 工作流自动创建（第 13 保）。
+
+按第 05 保的规则，\`main\` 必须走 PR 合并，因此机器人不直推——它开的也是 PR。
+
+**审这一份要看的是**：
+- 访问/克隆是否首次非空（若长期为 0，按第 12 保的口径应砍掉对应工作，而不是继续维护）；
+- \`good first issue\` 是否低于 3 个（低于就要补任务池，见第 13 保 SOP）；
+- 是否有未标记答案的 Q&A 超过 48 小时（第 04 保的响应承诺）。
+
+合并方式：squash。" \
+            --label "模块:CI" || echo "PR 创建失败（可能已存在同名分支的 PR），请手动处理"
+
+      - name: 未勾选提交时给出提示
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.commit_draft != 'true'
+        run: |
+          echo "本次只产出草稿，未提交。"
+          echo "要归档请重新触发并勾选 commit_draft=true —— 工作流会开 PR，不会直推 main。"

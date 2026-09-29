@@ -168,6 +168,61 @@ DELETE_BRANCH_EXIT=1
 PASS: 删除 main 被拒
 ```
 
+### 4.6b `v*` tag：创建允许，删除与移动都被拒（实测）
+
+tag ruleset 的 `rules` 只有 `deletion` 与 `update`，所以**创建新 tag 是允许的**（否则没法发版）。
+用一个一次性 tag 把两个禁止动作都实测了一遍：
+
+```console
+$ git tag -a v0.1.0-probe -m "probe" && git push origin v0.1.0-probe
+ * [new tag]         v0.1.0-probe -> v0.1.0-probe        ← 创建成功（预期内）
+
+$ git push origin :refs/tags/v0.1.0-probe
+remote: error: GH013: Repository rule violations found for refs/tags/v0.1.0-probe.
+remote:
+remote: - Cannot delete this tag
+ ! [remote rejected] v0.1.0-probe (push declined due to repository rule violations)
+DELETE_EXIT=1                                            ← 删除被拒
+
+$ git tag -f v0.1.0-probe HEAD~2 && git push --force origin refs/tags/v0.1.0-probe
+remote: - Cannot update this protected ref.
+ ! [remote rejected] v0.1.0-probe -> v0.1.0-probe (push declined due to repository rule violations)
+MOVE_EXIT=1                                              ← 移动被拒
+```
+
+两条都拦住了。**代价是探针 tag 自己也删不掉了**——删除同样命中 `deletion` 规则。
+这正好把第六节的紧急流程逼成了必须走一遍的真实流程，见 4.6c。
+
+### 4.6c 紧急绕过流程的实测（不是纸上流程）
+
+因为不留 bypass，探针 tag 只能靠「临时降级 enforcement」清掉。完整实测：
+
+```console
+$ gh api --method PUT repos/lifuchun522/springaialibabapractice/rulesets/24152536 -f enforcement=disabled
+{"enforcement":"disabled","name":"tag-protect"}
+
+$ git push origin :refs/tags/v0.1.0-probe
+ - [deleted]         v0.1.0-probe                        ← 降级后删除成功
+delete_exit=0
+
+$ gh api --method PUT repos/lifuchun522/springaialibabapractice/rulesets/24152536 -f enforcement=active
+{"enforcement":"active","name":"tag-protect"}
+
+$ git ls-remote --tags origin v0.1.0-probe
+（空 = 已删除）
+$ gh api repos/lifuchun522/springaialibabapractice/rulesets/24152536 --jq '{name,enforcement,bypass:.bypass_actors}'
+{"bypass":[],"enforcement":"active","name":"tag-protect"}
+```
+
+三点结论：
+
+1. 紧急流程**可行**：三步（降级 → 动作 → 恢复）实测走通，全程不到一分钟；
+2. 恢复后 `bypass` 仍为空数组、`enforcement` 仍为 `active`，**没有留下永久开口**；
+3. 这次绕过的书面记录就是本小节——按第六节的红线要求，原因是「清理自己造的探针 tag」，
+   绕过的规则是 `tag-protect` 的 `deletion`，如何防止再发生：
+   **以后不再为了验证规则去创建真实的、命中受保护前缀的 tag**，
+   改为读回 ruleset 定义 + 在一次性测试仓库里演练。
+
 ### 4.7 CODEOWNERS 与 owner 权限
 
 ```console
@@ -253,6 +308,8 @@ gh api --method PUT repos/lifuchun522/springaialibabapractice/rulesets/24152533 
 | 5.4 | 直推 main 被远端拒绝 | ✅ | 4.3 |
 | 5.5 | 删除 main 被拒 | ✅ | 4.6 |
 | 5.6 | 删除受保护 tag 被拒，tag 仍指向原提交 | ✅ | 4.5 |
+| 5.6b | `v*` tag 创建允许、删除与移动都被拒 | ✅ | 4.6b |
+| 5.6c | 紧急绕过流程（降级→动作→恢复）实测走通且不留开口 | ✅ | 4.6c |
 | 5.7 | CODEOWNERS 存在且只卡关键路径 | ✅ | 4.7 + 文件内容四条模式 |
 | 5.8 | owner 权限满足 CODEOWNERS 生效前提 | ✅ | 4.7：`role_name = admin` |
 | 5.9 | 快照含两个 ruleset 详情，且含关键字段 | ✅ | `evidence/ruleset-24152533.json`、`ruleset-24152536.json` |
