@@ -1,0 +1,52 @@
+name: deploy-gate
+
+# 第 08 保：部署人工闸门
+#
+# 为什么单独一个文件而不是塞进 release.yml：
+#   1) `environment: production` 的审批闸门只在**引用该 environment 的 job** 上生效，
+#      把它和构建/发布混在一个 job 里，会出现「构建失败了却已经要审批」的怪状态；
+#   2) 闸门要能被**单独手动触发**（workflow_dispatch），用于演练「审批通道是否可用」，
+#      不必真的发一次版本。
+#
+# 权限：只读。闸门本身不写任何仓库状态，所以不需要 contents: write。
+# 密钥：一律走 production 环境的 Secrets/Variables，禁止写进本文件。
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: '本次部署的目的（会显示在审批界面，供审批人判断）'
+        required: true
+        default: '验证 production 环境闸门可用'
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: 生产闸门（需人工审批）
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://github.com/lifuchun522/springaialibabapractice/actions
+    # 部署类工作流不允许并发取消：取消到一半会留下不一致的线上状态
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - name: 闸门已到达
+        run: |
+          echo "environment gate reached"
+          echo "目的：${{ github.event.inputs.reason }}"
+          echo "触发人：${{ github.actor }}"
+          echo "运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: 确认环境级配置通道可用（只列名字，不打印值）
+        env:
+          # 环境级 Variable（非敏感）；未配置时为空，本步骤仅用于展示通道是否可用
+          APP_ENV: ${{ vars.APP_ENV }}
+        run: |
+          echo "APP_ENV（环境级 Variable）= ${APP_ENV:-<未配置>}"
+          echo "注意：本步骤只输出变量名与值，不输出任何密钥内容。"
+          echo "若上面的 APP_ENV 为空，说明 production 环境还没配 Variable，"
+          echo "配置路径：Settings → Environments → production → Environment variables。"

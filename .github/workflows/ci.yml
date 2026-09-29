@@ -1,6 +1,6 @@
 name: CI
 
-# 每一次提交都要过同一道门：编译 + 单测 + 基线门禁（JDK/Maven/依赖收敛）。
+# 每一次提交都要过同一道门：编译 + 单测 + 基线门禁（JDK/Maven/依赖收敛）与架构图一致性。
 # 这里不需要任何密钥——测试用内存库、MCP 客户端在 test profile 下关闭。
 
 on:
@@ -8,6 +8,12 @@ on:
     branches: [main, 'chapter/**']
   pull_request:
     branches: [main]
+
+# 第 08 保：最小权限。CI 只读仓库内容，不需要写权限。
+# 显式声明之后，job 内的 GITHUB_TOKEN 即使被误用也无法改仓库状态——
+# 「人记得住规则，但人守不住规则」，所以把权限交给声明而不是交给自觉。
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -56,6 +62,12 @@ jobs:
         # 图是散文，散文不会失败。这道门禁只依赖 Python 标准库，
         # 检查：必需组件是否在图上、中英两份图是否漂移、预留组件是否同时记在非交付清单里。
         run: python3 scripts/check-diagrams.py
+
+      - name: 治理索引死链门禁（第 07/14 保）
+        # 同一类问题的第二个实例：docs/github-ops/README.md 是十三保索引，
+        # 文件名一改就会出现死链，而死链不会让任何东西失败——只会在读者点进去时才发现。
+        # 只依赖 Python 标准库，不联网、不鉴权，因此不会因外部抖动红灯。
+        run: python3 scripts/check-github-ops-links.py
 
       - name: 上传测试报告
         if: always()

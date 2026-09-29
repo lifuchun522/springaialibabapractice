@@ -1,0 +1,74 @@
+name: Deploy Pages
+
+# 第 10 保：发布门户（GitHub Pages）
+#
+# 为什么用官方 Pages 动作而不是 gh-pages 分支：
+#   1) 不需要额外分支与强制推送，`main` 上的 ruleset 因此不受影响（第 05 保禁止直推 main）；
+#   2) 部署凭据用 OIDC（id-token: write），不需要长期 token，泄漏面更小；
+#   3) 产物与源码同仓同 PR 评审，改门户 = 改一次 PR，可回滚（第 06 保）。
+#
+# 站点源：docs/site/ 里的静态文件（当前只有 index.html）。
+# 与仓库 homepageUrl 的关系：本工作流部署后的地址就是 homepageUrl 指向的地址；
+# 改一处必须改另一处，脚本 scripts/gh-01-repo-baseline.sh 里以 HOMEPAGE 变量统一。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/site/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: 构建站点产物
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 站点静态检查（门户四块内容是否齐全）
+        # 门户首页必须含 Quick Start / 掌次路线 / FAQ / 贡献入口四块，
+        # 否则「部署成功但内容缺一块」会静默通过（同一类问题在第 08 保的门禁里已出现过）。
+        run: |
+          set -e
+          f=docs/site/index.html
+          test -f "$f" || { echo "::error::$f 不存在"; exit 1; }
+          for kw in "Quick Start" "掌次路线" "FAQ" "贡献入口"; do
+            if ! grep -q "$kw" "$f"; then
+              echo "::error::$f 缺少必需小节：$kw"
+              exit 1
+            fi
+          done
+          grep -q 'lang="zh-CN"' "$f" || { echo "::error::页面语言标记缺失"; exit 1; }
+          echo "站点检查通过：四块内容与语言标记齐全"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site
+
+  deploy:
+    name: 部署到 Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: 输出部署地址
+        run: |
+          echo "站点地址：${{ steps.deployment.outputs.page_url }}"
+          echo "请确认它与 gh repo view --json homepageUrl 一致。"
