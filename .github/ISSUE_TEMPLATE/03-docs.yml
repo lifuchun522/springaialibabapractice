@@ -1,0 +1,48 @@
+name: 文档问题
+description: 文档缺失、过期或描述与实测不符
+title: '[文档] '
+labels: ['类型:文档', '模块:文档']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        本仓库的判定口径是「文档写的不算数，跑出来的才算数」，
+        所以文档与实测不一致时请把**两边原文**都贴出来。
+  - type: input
+    id: path
+    attributes:
+      label: 文档路径
+      description: 出问题的文件路径（例如 docs/github-ops/02-local-clients.md）
+      placeholder: docs/github-ops/02-local-clients.md
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: 当前描述
+      description: 原文摘录（含所在小节名），以及它为什么是错的/过期的
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望描述
+      description: 你实测得到的结果，或你认为正确的写法；贴命令与输出
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 满足什么条件才算改好（例如：按新文档从干净环境执行能一次通过）
+    validations:
+      required: true
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已确认这不是「我本地环境特殊」导致的问题（必要时附环境信息）
+          required: true
+        - label: 我已阅读 docs/github-ops/glossary.md 的用词口径
+          required: true

@@ -1,0 +1,61 @@
+name: 功能建议
+description: 提出新能力或对现有能力的改进建议
+title: '[功能] '
+labels: ['类型:功能', '状态:待确认']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        谢谢你的建议。请先说清「谁在什么情况下需要它」——没有使用场景的建议很难排期。
+
+        还没成形的想法请先去 [Discussions 建议讨论](https://github.com/lifuchun522/springaialibabapractice/discussions)，
+        成形后再回到这里开 Issue。
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景
+      description: 谁在什么情况下需要它（写具体的人与具体的事，不要写「大家都需要」）
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: 业务价值
+      description: 不做的代价是什么（当前你被迫怎么绕过去？绕的代价是什么？）
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: 当前行为
+      description: 现在是怎么做的、卡在哪一步
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你希望改成什么样；如果能给出命令或字段级别的期望更好
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 替代方案
+      description: 你考虑过的其它做法，以及为什么没选它
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 满足什么条件才算做完（可判定：命令输出、文件产物、接口字段）
+    validations:
+      required: true
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索过已有 Issue 与 Discussions
+          required: true
