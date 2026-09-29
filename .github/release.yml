@@ -1,0 +1,50 @@
+# Release notes 自动分类（第 10 保）
+#
+# 作用：`gh release create --generate-notes` 会按这里的 categories 把 PR 分组。
+# 关键设计：**最后一个分类必须是 '*' 兜底**——否则没打标签的 PR 会直接消失，
+# 而「凭空少了一条改动」比「分类难看」严重得多。
+#
+# 标签真源：docs/github-ops/labels.txt（本文件引用的标签必须在那份清单里能找到，
+# 或属于 GitHub 官方默认标签）。
+#
+# 分类与「教程 tag / 软件版本 tag 分离」的关系：
+#   ch01–ch18 是教程标签，指向章节内容，不产生 Release；
+#   v* 才是软件 SemVer，Release 只在 v* 上创建。
+#   本文件只影响 Release notes 的分组，不影响任何 tag 的语义。
+
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+    authors:
+      - github-actions[bot]
+
+  categories:
+    - title: 新增
+      labels:
+        - 类型:功能
+        - enhancement
+
+    - title: 修复
+      labels:
+        - 类型:缺陷
+        - bug
+        - fix
+
+    - title: 文档
+      labels:
+        - 类型:文档
+        - documentation
+
+    - title: 依赖
+      labels:
+        - dependencies
+        - 模块:CI
+
+    - title: 安全
+      labels:
+        - 模块:安全
+
+    - title: 其他
+      labels:
+        - '*'

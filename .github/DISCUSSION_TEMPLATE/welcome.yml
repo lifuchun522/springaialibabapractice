@@ -1,0 +1,36 @@
+title: "[欢迎] 介绍一下你自己与想解决的问题"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎来到 springaialibabapractice（「降 Spring AI 阿里」18 掌的练习仓库）。
+
+        第一次来的话，先说说你的背景和目标——这样回答问题的人才知道该给到什么粒度。
+        提问前请先看一眼 [README 首屏五段](https://github.com/lifuchun522/springaialibabapractice#readme)，
+        以及 [本地流程速查](https://github.com/lifuchun522/springaialibabapractice/blob/main/docs/github-ops/02-local-clients.md)。
+
+        注意：能复现的缺陷请走 Issue；本区承接**使用问题**，工作日 48 小时内首次响应。
+  - type: textarea
+    id: background
+    attributes:
+      label: 你的背景
+      description: 语言、框架、现在在做什么（例如：Java 后端，正在选型 Agent 框架）
+      placeholder: Java / Spring Boot，团队在做内部知识库问答
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: 你希望在这个仓库里完成什么
+      description: 想跑通哪一掌、想解决什么具体问题、卡在哪一步
+      placeholder: 想按第七节一键启动跑通数字人对话，卡在 MCP 连不上
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 环境（可选）
+      description: JDK 版本 / 操作系统 / Docker 版本
+      placeholder: JDK 21.0.5 / Windows 11 / Docker 27
+    validations:
+      required: false

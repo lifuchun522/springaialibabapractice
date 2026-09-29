@@ -1,0 +1,57 @@
+# 依赖与 Actions 自动升级（第 11 保）
+#
+# 顺序依据：可见性 → 检测 → 修复 → 阻断。
+# 本文件负责「修复」这一环：让升级以 PR 的形式出现，而不是等人想起来手动 bump。
+#
+# 取舍：
+#   - maven 与 github-actions 都按周扫（日扫产生的 PR 噪音大于收益，尤其是 Spring 栈整批升级）；
+#   - Spring 栈**分组**成一条 PR：org.springframework* 与 com.alibaba.cloud* 版本互相咬合，
+#     拆成多条 PR 会互相冲突，反而更难合；
+#   - 忽略 Spring Boot **主版本**跳变：主版本升级会改配置与 API，必须人工评估，
+#     不能让机器人直接开 PR 诱导「点一下就合」。
+#
+# 标签必须在 docs/github-ops/labels.txt 中存在（dependencies / 模块:CI 均已登记）。
+
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "模块:CI"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      spring-stack:
+        patterns:
+          - "org.springframework*"
+          - "com.alibaba.cloud*"
+          - "com.alibaba.*"
+    ignore:
+      # Spring Boot 主版本跳变必须人工评估：配置键与自动配置都可能变
+      - dependency-name: "org.springframework.boot:*"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "org.springframework.ai:*"
+        update-types:
+          - "version-update:semver-major"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "模块:CI"
+    commit-message:
+      prefix: "chore(ci)"

@@ -1,0 +1,79 @@
+name: 缺陷报告
+description: 报告一个可复现的功能或文档错误
+title: '[缺陷] '
+labels: ['类型:缺陷', '状态:待确认']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请逐项填写，缺少复现步骤的问题会被标记为「状态:待确认」。
+
+        不确定是不是缺陷、或者只是使用问题，请改到 [Discussions 问答](https://github.com/lifuchun522/springaialibabapractice/discussions) 提问。
+  - type: textarea
+    id: background
+    attributes:
+      label: 业务背景
+      description: 这个缺陷在什么场景下影响谁（例如：按 README 第七节一键启动时，新人第一次接触）
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 当前行为
+      description: 描述你观察到的现象，不要只写「报错了」；有报错就贴原文
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你认为应该是什么结果；如果对应某份文档，请贴文档路径
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 从干净环境开始，逐步写清命令（这是能否被修复的关键）
+      placeholder: |
+        1. git clone git@github.com:lifuchun522/springaialibabapractice.git
+        2. ./mvnw -B -ntp clean verify
+        3. 观察到 ...
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 环境与版本
+      description: 填 JDK 版本、Spring Boot 版本、操作系统、以及 git rev-parse --short HEAD 的输出
+      placeholder: JDK 21.0.x / Spring Boot 3.5.10 / Windows 11 / abc1234
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志或截图
+      description: 贴原始输出，不要只贴结论。涉及截图的，请确认图中不含 token 与邮箱
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 满足什么条件才算修好（要求可判定：能跑命令、能看产物、能读回字段）
+      placeholder: |
+        - 执行 xxx 命令后输出 yyy
+        - 文档 zzz 中出现 www
+    validations:
+      required: true
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索过已有 Issue，确认不是重复问题
+          required: true
+        - label: 我已阅读 CONTRIBUTING.md
+          required: true
+        - label: 我贴出的日志与截图中不含任何密钥或个人邮箱
+          required: true

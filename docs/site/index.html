@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>springaialibabapractice 发布门户</title>
+  <meta name="description" content="「降 Spring AI 阿里」18 掌实战仓的发布门户：版本入口、掌次路线、FAQ 与贡献入口。">
+  <style>
+    :root {
+      --ink: #1f2328;
+      --muted: #59636e;
+      --line: #d1d9e0;
+      --bg: #ffffff;
+      --accent: #0969da;
+      --soft: #f6f8fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+            "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 72px; }
+    header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 8px; }
+    h1 { font-size: 26px; line-height: 1.35; margin: 0 0 8px; }
+    .sub { color: var(--muted); margin: 0; }
+    h2 {
+      font-size: 19px; margin: 36px 0 10px; padding-left: 10px;
+      border-left: 4px solid var(--accent);
+    }
+    p, li { color: var(--ink); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: var(--soft); border: 1px solid var(--line); border-radius: 4px;
+      padding: 1px 5px; font-size: 14px;
+    }
+    pre {
+      background: var(--soft); border: 1px solid var(--line); border-radius: 6px;
+      padding: 12px 14px; overflow-x: auto; font-size: 13.5px; line-height: 1.6;
+    }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 15px; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: var(--soft); font-weight: 600; }
+    .note {
+      background: var(--soft); border-left: 4px solid var(--muted);
+      padding: 10px 14px; border-radius: 0 6px 6px 0; color: var(--muted); margin: 14px 0;
+    }
+    footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    ul { padding-left: 22px; }
+    @media (max-width: 520px) {
+      .wrap { padding: 24px 14px 56px; }
+      h1 { font-size: 21px; }
+      table { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>springaialibabapractice 发布门户</h1>
+    <p class="sub">
+      「降 Spring AI 阿里」18 掌配套代码仓：每一掌都能跑、能验收、能回滚。
+      本页是<strong>稳定入口</strong>——版本契约看 Releases，掌次路线看仓库文档，协作入口在文末。
+    </p>
+  </header>
+
+  <div class="note">
+    本页由 <code>.github/workflows/deploy-pages.yml</code> 从 <code>docs/site/</code> 自动发布。
+    改动本页 = 提交一次 PR；不允许直接编辑 Pages 产物。
+  </div>
+
+  <h2>Quick Start</h2>
+  <p>
+    环境要求：<strong>JDK 21 LTS</strong> + Maven 3.9+（用仓库自带 <code>./mvnw</code> 即可）+ Docker（可选）。
+    不需要任何密钥就能跑通编译与单测。
+  </p>
+  <pre>git clone git@github.com:lifuchun522/springaialibabapractice.git
+cd springaialibabapractice
+./mvnw -B -ntp clean verify        # 编译 + 单测 + 架构图门禁 + 索引死链门禁</pre>
+  <p>
+    想看完整效果：按仓库 README 第七节一键启动（<code>docker compose</code> 一条命令起全套）。
+    遇到「跑不起来」请先到
+    <a href="https://github.com/lifuchun522/springaialibabapractice/discussions">Discussions 问答</a>
+    提问（工作日 48 小时内首次响应）。
+  </p>
+
+  <h2>版本入口（Releases）</h2>
+  <p>
+    软件版本从 <code>v0.1.0</code> 起，语义化版本；每个版本页给出该版本的改动分类
+    （新增 / 修复 / 文档 / 依赖 / 安全 / 其他）。
+  </p>
+  <ul>
+    <li><a href="https://github.com/lifuchun522/springaialibabapractice/releases">全部 Releases</a></li>
+    <li><a href="https://github.com/lifuchun522/springaialibabapractice/releases/latest">最新版本</a></li>
+  </ul>
+
+  <h2>掌次路线</h2>
+  <p>
+    仓库有<strong>两套 tag，语义不混用</strong>：
+  </p>
+  <table>
+    <thead>
+      <tr><th>tag</th><th>指向什么</th><th>用在哪</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>ch01</code> – <code>ch18</code></td>
+        <td>教程章节（文章 + 视频对应的那一掌）</td>
+        <td>跟着系列连载读；<strong>不产生 Release</strong></td>
+      </tr>
+      <tr>
+        <td><code>v*</code></td>
+        <td>软件版本（符合 SemVer）</td>
+        <td>取用某个可复现的代码状态；<strong>Release 只在这里创建</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    十八掌的完整目录、按角色选路线、每掌的验收记录：
+    <a href="https://github.com/lifuchun522/springaialibabapractice#readme">README</a> ·
+    <a href="https://github.com/lifuchun522/springaialibabapractice/tree/main/docs">docs/</a>
+  </p>
+
+  <h2>FAQ</h2>
+  <table>
+    <thead>
+      <tr><th>问题</th><th>答案</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>版本和章节是一回事吗？</td>
+        <td>不是。<code>ch*</code> 是教程章节标签，<code>v*</code> 是软件版本。要看版本改动去 Releases，要按课程学去 README。</td>
+      </tr>
+      <tr>
+        <td>该从哪一掌开始读？</td>
+        <td>按角色选路线，不要从头读到尾。见
+          <a href="https://github.com/lifuchun522/springaialibabapractice/discussions/60">Discussions #60 的起点对照</a>。</td>
+      </tr>
+      <tr>
+        <td>仓库有治理/运维相关的文档吗？</td>
+        <td>有，十三保仓库运营治理在
+          <a href="https://github.com/lifuchun522/springaialibabapractice/tree/main/docs/github-ops">docs/github-ops/</a>。</td>
+      </tr>
+      <tr>
+        <td>发现安全漏洞怎么办？</td>
+        <td><strong>不要在公开 Issue 里贴细节</strong>，走
+          <a href="https://github.com/lifuchun522/springaialibabapractice/security/advisories/new">私密漏洞报告</a>。
+          见 <a href="https://github.com/lifuchun522/springaialibabapractice/blob/main/.github/SECURITY.md">SECURITY.md</a>。</td>
+      </tr>
+      <tr>
+        <td>本地跑需要哪些密钥？</td>
+        <td>编译与单测<strong>不需要任何密钥</strong>。要调真实模型时用环境变量注入，见
+          <a href="https://github.com/lifuchun522/springaialibabapractice/blob/main/.env.example">.env.example</a>。</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>贡献入口</h2>
+  <ul>
+    <li>开始之前读
+      <a href="https://github.com/lifuchun522/springaialibabapractice/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>：
+      三条贡献路径 + 提交前三步。</li>
+    <li>合适第一次贡献的任务带
+      <a href="https://github.com/lifuchun522/springaialibabapractice/labels/good%20first%20issue">good first issue</a> 标签，
+      每个都写了「要做什么 / 验收标准 / 改动范围」。</li>
+    <li>报告缺陷用
+      <a href="https://github.com/lifuchun522/springaialibabapractice/issues/new/choose">Issue 表单</a>；
+      「验收标准」是必填项——没有它的问题无法被判定完成。</li>
+    <li>本地流程速查（Git / gh / Desktop 三入口 + 冲突只解不覆盖）：
+      <a href="https://github.com/lifuchun522/springaialibabapractice/blob/main/docs/github-ops/02-local-clients.md">02-local-clients.md</a>。</li>
+  </ul>
+
+  <footer>
+    合并策略为 squash，<code>main</code> 禁强推、禁删除、必须过 CI；
+    回滚用 <code>gh pr revert</code>，不重写历史。
+    仓库运营治理的十三个主题索引见
+    <a href="https://github.com/lifuchun522/springaialibabapractice/blob/main/docs/github-ops/README.md">docs/github-ops/README.md</a>。
+  </footer>
+
+</div>
+</body>
+</html>

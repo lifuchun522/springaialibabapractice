@@ -22,9 +22,20 @@
 
 [简体中文](README.md) · [English](README.en.md)
 
-[读哪几掌](#五读哪几掌按角色选路线) · [18 掌目录](#六18-掌目录文章--视频) · [一键启动](#七一键启动docker-compose-一条命令) · [能学到什么](#九能学到什么本仓库能核验到什么) · [文章系列](#十二文章系列还有三处判断值得单独拎出来)
+[读哪几掌](#五读哪几掌按角色选路线) · [18 掌目录](#六18-掌目录文章--视频) · [一键启动](#七一键启动docker-compose-一条命令) · [能学到什么](#九能学到什么本仓库能核验到什么) · [文章系列](#十二文章系列还有三处判断值得单独拎出来) · [运维治理](docs/github-ops/README.md)
 
 </div>
+
+> **首屏五段**（新访客三步：看懂项目 → 找到快速开始 → 知道去哪提问；完整索引见 [docs/github-ops/README.md](docs/github-ops/README.md)）
+>
+> | 段 | 这一屏给你什么 | 去看 |
+> | --- | --- | --- |
+> | ① 项目定位 | 一套以数字人项目为线索的 Spring AI Alibaba 实战系列（18 篇文章 + 18 集视频）的**练习仓库**：系列讲「为什么这么定」，本仓摆「实测成什么样」 | 本文下方「一句话导读」与[一、先看这一屏](#一先看这一屏30-秒判断要不要往下读) |
+> | ② 快速开始 | `docker compose` 一条命令起全套；不想用 Docker 就在本机起两个进程 | [七、一键启动](#七一键启动docker-compose-一条命令) |
+> | ③ 掌次路线 | 18 掌的分支 / tag / 进度表，按角色选一条线读 | [五、按角色选路线](#五读哪几掌按角色选路线)、[六、18 掌目录](#六18-掌目录文章--视频)、[十一、进度表](#十一18-掌进度一眼看完哪一掌已经能跑) |
+> | ④ 技术栈 | JDK 21 / Spring Boot 3.5.10 / Spring AI 1.1.2 / Spring AI Alibaba 1.1.2.2，基线由 `validate` 门禁守住 | [十、技术基线](#十技术基线写在文档里不算数过不了-validate-才算)、[`pom.xml`](pom.xml) |
+> | ⑤ 参与贡献 | 提 Issue 请先读 [CONTRIBUTING.md](CONTRIBUTING.md)；提问与不确定是不是缺陷的，走 [Discussions](https://github.com/lifuchun522/springaialibabapractice/discussions) | [CONTRIBUTING.md](CONTRIBUTING.md)、[Issue 模板](.github/ISSUE_TEMPLATE)、[PR 模板](.github/pull_request_template.md) |
+>
 
 > **一句话导读**：这是一套以**数字人项目**为唯一线索的 Spring AI Alibaba 实战系列（锁定 v1.1.2.2 生产基线）——**18 篇文章 + 18 集视频**已全部发布在腾讯云开发者社区，从选型、环境、底座一路打到 K8s 上线，每一掌都给出可验证的完成标准。本仓库是它的**练习仓库**：系列负责告诉你「为什么这么定」，仓库负责把「实测成什么样」摆出来。
 

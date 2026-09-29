@@ -1,0 +1,37 @@
+# 13太保玩转github 标签清单（第 03 保真源）
+#
+# 格式：名称|颜色(6位十六进制，不带 #)|说明
+# 用法：bash scripts/gh-labels.sh   （幂等：已存在则更新颜色与说明）
+# 约束：本文件的名称必须与 .github/ISSUE_TEMPLATE/*.yml 的 labels 值逐字符一致；
+#       .github/release.yml 与 .github/dependabot.yml 引用的标签也必须在这里能找到。
+#
+# 官方默认标签 good first issue / help wanted 保留不改名（第 13 保的任务池要用）。
+# 依赖类标签 dependencies 用于第 10/11 保的 Release 分类与 Dependabot。
+
+# ---- 类型 ----
+类型:缺陷|d73a4a|可复现的功能或文档错误
+类型:功能|a2eeef|新增能力请求
+类型:文档|0075ca|文档补充或修正
+# ---- 优先级 ----
+优先级:高|b60205|阻断主流程
+优先级:中|fbca04|影响体验但不阻断
+优先级:低|c5def5|可以排期
+# ---- 状态（triage 状态机，第 07 保）----
+状态:待确认|d4c5f9|等待维护者确认
+状态:进行中|0e8a16|已有人认领
+状态:已阻塞|b60205|依赖外部条件
+状态:待验证|5319e7|修复完成，待验证
+状态:不处理|6a737d|明确不计划处理
+状态:重复|cfd3d7|与已有 Issue 重复
+# ---- 模块 ----
+模块:文档|1d76db|README / CONTRIBUTING / docs 下文档
+模块:脚本|5319e7|本地 CLI 脚本（scripts/）
+模块:CI|0e8a16|GitHub Actions 配置与流水线
+模块:安全|b60205|安全政策、依赖与密钥治理
+# ---- 难度 ----
+难度:入门|7057ff|适合首次贡献
+难度:进阶|8a2be2|需要熟悉项目结构
+# ---- 依赖（第 11 保 Dependabot）----
+dependencies|0366d6|依赖升级（Dependabot / 手工）
+# ---- Release 分类用（第 10 保）----
+skip-changelog|ededed|不写进 Release notes

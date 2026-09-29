@@ -1,0 +1,18 @@
+# Issue 入口路由（第 03/07 保）
+#
+# 取舍：空白 Issue 一律关闭。原因不是「限制自由」，而是自由文本没有字段：
+# 无法判重、无法定义完成、无法关闭，最终变成无人敢关的长期负债。
+#
+# 三个正式入口（01-bug / 02-feature / 03-docs）之外的诉求走 Discussions：
+# 使用问题、未成形的建议、作品展示、方向征集都不该占 Issue 待办。
+blank_issues_enabled: false
+contact_links:
+  - name: 使用问题与讨论（Discussions）
+    url: https://github.com/lifuchun522/springaialibabapractice/discussions
+    about: 不确定是不是缺陷、或者只是「跑不起来想问问」，请先到 Discussions 提问（工作日 48 小时内首次响应）
+  - name: 安全问题（请勿公开披露）
+    url: https://github.com/lifuchun522/springaialibabapractice/security/advisories/new
+    about: 发现安全漏洞请走私密报告，不要在公开 Issue 里贴细节
+  - name: 本地与协作流程速查
+    url: https://github.com/lifuchun522/springaialibabapractice/blob/main/docs/github-ops/02-local-clients.md
+    about: 第一次提 PR 或遇到合并冲突，先看这份 Git / gh / Desktop 速查
