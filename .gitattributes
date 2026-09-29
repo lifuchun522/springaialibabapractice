@@ -5,6 +5,12 @@ mvnw.cmd text eol=crlf
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
 *.bat text eol=crlf
+# 第 02 保补充：仓库内新增的 .sh（如 scripts/gh-*.sh）必须 LF，
+# CRLF 的 .sh 在 Linux/macOS/CI 上会报 bad interpreter。
+*.sh text eol=lf
 *.jar binary
 *.png binary
 *.jpg binary
+*.gif binary
+*.woff2 binary
+*.mp4 binary
