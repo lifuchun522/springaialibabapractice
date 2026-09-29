@@ -6,11 +6,7 @@
 
 **After Spring AI 2.0 GA: how a Java team should "tame" an agent framework.**
 
-Companion code for an 18-part article series — every chapter is a loop you can run, verify and roll back.
-
-This is not a "type along and move on" sample dump. Each chapter gets its own branch, pull request
-and tag, plus an acceptance record quoting **raw output** — real model responses, database queries,
-log lines.
+Companion code for an 18-part article series: every chapter is **one branch, one PR, one tag**, plus an acceptance record quoting **raw output** — real model responses, database queries, log lines.
 
 [![CI](https://github.com/lifuchun522/springaialibabapractice/actions/workflows/ci.yml/badge.svg)](https://github.com/lifuchun522/springaialibabapractice/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -18,133 +14,179 @@ log lines.
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.10-6DB33F.svg)](pom.xml)
 [![Spring AI](https://img.shields.io/badge/Spring%20AI-1.1.2-6DB33F.svg)](pom.xml)
 [![Spring AI Alibaba](https://img.shields.io/badge/Spring%20AI%20Alibaba-1.1.2.2-FF6A00.svg)](pom.xml)
-[![Tests](https://img.shields.io/badge/tests-offline%20%26%20no%20keys-brightgreen.svg)](#7-one-command-startup-a-single-docker-compose)
+[![Tests](https://img.shields.io/badge/tests-offline%20%26%20no%20keys-brightgreen.svg)](#2-quick-start-one-command-brings-up-everything)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](.github/pull_request_template.md)
 
 [简体中文](README.md) · [English](README.en.md)
 
-[Who is this for](#1-is-this-for-you-30-seconds) · [Which chapters](#5-which-chapters-to-read-pick-your-route) · [All 18 chapters](#6-all-18-chapters-articles--videos) · [One-command startup](#7-one-command-startup-a-single-docker-compose) · [Articles](#12-the-article-series-three-more-judgements-worth-reading)
+[1. Is it worth your time](#1-is-it-worth-your-time) · [2. Quick start](#2-quick-start-one-command-brings-up-everything) · [3. The 18 chapters](#3-the-18-chapters-articles-and-videos) · [4. Branches and tags](#4-branches-and-tags) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
-> One-line orientation: this is a Spring AI Alibaba practice series (pinned to the v1.1.2.2 production baseline) told through a single thread — a digital-human project. **18 articles + 18 videos**, all published on the Tencent Cloud developer community, running from selection and environment through to K8s rollout, with a verifiable completion criterion in every move. This repo is the **practice repository**: the series explains why each decision was made, the repo shows what actually happened when it ran.
+> **In one line**: a Spring AI Alibaba practice series told through a single thread — a digital-human project (production baseline pinned to **v1.1.2.2**) — running from framework selection and environment through to a K8s rollout, with a verifiable completion criterion in every move. **The series explains why each decision was made; this repo shows what actually happened when it ran.**
+>
+> The baseline is enforced, not documented: JDK 21 LTS · Spring Boot 3.5.10 · Spring AI 1.1.2 · Spring AI Alibaba 1.1.2.2 · MySQL 8 + Flyway — miss it and the build fails at `validate`.
 
----
+## 1. Is it worth your time?
 
-## 1. Is this for you? (30 seconds)
+**This is for you if**: you build AI or agent applications in **Java / Spring Boot**; you are choosing between Spring AI, Spring AI Alibaba, AgentScope and LangChain4j and want an **evidence-based** comparison; your project already runs but every new requirement moves the structure; you need to **deliver, deploy and be evaluated**, not just demo.
 
-**This is for you if:**
+**Not for you if**: you want a "first ChatBot in 10 minutes" tutorial (official docs are faster); you are on **Python** (except the protocol parts of chapters 7 and 13); you want a ready-made framework — this content delivers **contracts and judgements**, not a product.
 
-- you build AI or agent applications in **Java / Spring Boot**;
-- you are choosing between Spring AI, Spring AI Alibaba, AgentScope and LangChain4j and want an
-  **evidence-based** comparison;
-- your project already runs, but **every new requirement moves the structure**;
-- you need to **deliver, deploy and be evaluated**, not just demo.
-
-**Not for you if:**
-
-- you want a "first ChatBot in 10 minutes" tutorial — official docs and examples are faster;
-- you are on **Python** — except the protocol parts of chapters 7 and 13, everything here is a
-  Spring-side engineering decision;
-- you want a ready-made framework — this content delivers **contracts and judgements**, not a product.
-
-**One body of content, three landing spots — pick by your patience:**
-
-| Where | For | What |
-|-------|-----|------|
-| [Wiki home](https://github.com/lifuchun522/springaialibabapractice/wiki) | people who want the summary | series guide + one page per chapter |
-| **This README** | people who want one pass | the guide + the deviations measured here |
-| [`docs/chNN-*.md`](docs) | people following along | full design doc + acceptance record with raw output |
-| [Projects](https://github.com/users/lifuchun522/projects/1) | people tracking progress | one item per chapter: Done / In progress / Backlog |
-
-| If you want to... | Go to |
-| --- | --- |
-| know whether this content fits you | [1. Is this for you](#1-is-this-for-you-30-seconds) |
-| know why agent frameworks matter *now* | [2. Why now](#2-why-now-the-heat-is-in-the-framework-not-the-model) |
-| stop reworking the structure for every feature | [3. The demo runs, the architecture does not](#3-why-most-teams-get-stuck-in-the-same-place-the-demo-runs-the-architecture-does-not) |
-| know which chapters to read | [5. Pick your route](#5-which-chapters-to-read-pick-your-route) |
-| run the whole thing first | [7. One-command startup](#7-one-command-startup-a-single-docker-compose) |
-| see the deviations this repo measured | [8. Measured deviations](#8-measured-deviations-not-copied-from-docs) |
-
-
-## 2. Why now: the heat is in the framework, not the model
-
-Three things in the Java ecosystem became impossible to route around this year:
-
-| When / what | What it actually changed for us |
-| --- | --- |
-| **Spring AI 2.0.0 GA** ([announcement](https://spring.io/blog/2026/06/12/spring-ai-2-0-0-GA-available-now)) | The abstraction layer is final: Advisor, Tool Calling, MCP, RAG, Observability are all stable. "Connecting Java to an AI model" stopped being the problem |
-| **Spring AI Alibaba 1.0 GA + Agent Framework / Graph Runtime** ([blog](https://java2ai.com/blog/spring-ai-alibaba-1.0-ga-release/), [GitHub](https://github.com/alibaba/spring-ai-alibaba), [docs](https://java2ai.com)) | The agent layer and the graph runtime arrived, killing the "Java can only do CRUD around a model" stereotype |
-| **A crowded field: AgentScope Java 2.0, several ADKs** | Selection stopped being "is there anything to choose" and became "how expensive is choosing wrong" — **framework choice is now an architecture decision, not a dependency coordinate** |
-
-So the thing blocking Java teams is no longer "how do I get the model to answer", but
-"now that it answers, how do I grow an agent on top without redoing the structure".
-
-Most published content stops at the first stop. This series starts at the second one — and this
-repository is the set of real commits behind it.
-
-## 3. Why most teams get stuck in the same place: the demo runs, the architecture does not
-
-If your code looks like this, the series is written for you:
-
-- The system prompt is a string literal in a controller, so ops needs a release to change a sentence;
-- Session state lives in a `ConcurrentHashMap`, and two browser tabs cross wires;
-- "Look up an order" means one more `if-else`; RAG means another branch; multi-agent means a `role` field;
-- Switching model vendors means editing `import` statements instead of configuration;
-- When something breaks you only see the final text — not which tool ran, what was retrieved, which branch was taken.
-
-Chapter 1 names this failure and explains why it is inevitable: **the old design is correct for
-single-turn Q&A. Once requirements cross the line of stateful / multi-step / interruptible /
-observable, what fails is not a piece of code but the whole structure.**
-
-Same judgement, expressed as the trade-off rule of the series:
-
-> Selection is boundary, boundary is cost, cost is architecture, architecture is trade-off.
-
-## 4. What "降" (tame) means here: not a downgrade, but bringing the framework under control
-
-"降" means to subdue and hold, not to downgrade. The whole series does one thing repeatedly:
-**compress new technology into an engineering-controllable range.** It shows up as three habits:
-
-1. **Pin versions, do not chase the newest.** The production baseline is **v1.1.2.2**;
-   `v2.0.0-M1.1` is watched only. Many `NoSuchMethodError`s are not bugs but late invoices for a
-   selection decision — shipping a pre-release to production transfers version risk to the business.
-   This repo turns that into a build gate, see [Baseline](#10-baseline-documented-is-not-enough-it-must-fail-validate).
-2. **Draw boundaries before comparing features.** Put Spring AI, Spring AI Alibaba Extensions, Agent
-   Framework, Graph Runtime and Admin/Studio in their proper layers, answer "which layer does my
-   requirement belong to" first, and only then discuss modules.
-3. **Add nothing you do not need.** Text completion only? The Spring AI base abstractions suffice.
-   Not even multi-turn? A plain Java service plus one HTTP call is optimal. **A framework only pays
-   off once the requirement crosses a threshold; below it, it is pure cost.**
-## 5. Which chapters to read: pick your route
-
-The 18 moves are **one dependency chain**, not 18 parallel articles. Reading out of order trips two
-traps: the contracts used in move N were frozen in move N−1, and the troubleshooting section of move
-N reproduces a failure left behind by move N−1.
-
-**So pick the route that matches your role, then read the index below.**
+**Pick the route that matches your role** (the 18 moves are one dependency chain, not 18 parallel articles: the contracts used in move N were frozen in move N−1):
 
 | Your role | Route | What you take away |
 | --- | --- | --- |
-| **Architect / tech lead**<br>(choosing, not building yet) | **1 → 9 → 10 → 13 → 15** | **Decision criteria**: should we use an agent at all, how far, hard-wired orchestration versus autonomous reasoning, where the MCP/A2A line sits, how to build evaluation |
-| **Backend / full-stack**<br>(already building AI features) | **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8** | **A reusable base contract**: `projectId` as the single anchor, management path separated from the realtime path, reasoning growing in exactly one place |
-| **SRE / platform / QA**<br>(shipping and delivering) | **14 → 15 → 16 → 17 → 18** | **A deliverable evidence chain**: which line of code decides a behaviour → six regression sets → one traceId locating model / tool / RAG / graph node / remote agent → deploys that do not drop traffic, self-heal and roll back |
+| Architect / tech lead | Ch **1 → 9 → 10 → 13 → 15** | **Decision criteria**: should we use an agent at all, how far, hard-wired orchestration versus autonomous reasoning, where the MCP/A2A line sits, how to build evaluation |
+| Backend / full-stack | Ch **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8** | **A reusable base contract**: `projectId` as the single anchor, management path separated from the realtime path, reasoning growing in exactly one place |
+| SRE / platform / QA | Ch **14 → 15 → 16 → 17 → 18** | **A deliverable evidence chain**: which line of code decides a behaviour → five test layers and six regression suites → one traceId locating model / tool / RAG / graph node / remote agent → deploys that do not drop traffic, self-heal and roll back |
 
-Chapter 3 has a line worth taping to your desk: *the thinner the base, the faster everything after it grows.*
+**Three boundaries that hold across the whole repo**:
 
-Only want to know how far the code has come? Jump to [chapter progress](#11-chapter-progress-what-already-runs).
+1. **The model never fills in identity.** Project/user ids travel out-of-band in `ToolContext`, never inside the tool's JSON Schema — the model cannot see them, so it cannot get them wrong.
+2. **Failures stop at the tool boundary.** Bounded retries plus a fallback result hand the fact "this tool is unavailable right now" to the model instead of killing the conversation.
+3. **Budgets live in engineering, not in the prompt.** Model calls per request have a hard cap and exceeding it ends the run **explicitly** (not by timeout), leaving event evidence behind.
 
+**This diagram is the set of lanes this repo actually runs** (drawn separately, because "which lane does a new capability belong to" is the first question it must answer):
 
-## 6. All 18 chapters (articles + videos)
+```mermaid
+flowchart TB
+    subgraph ADMIN["admin lane · configuration only"]
+        AUI["Operator console"]
+        CFG["Config catalog & publish"]
+    end
+    subgraph TALK["conversation lane · models and audio"]
+        RUI["Public runtime entry"]
+        AGENT["ReactAgent brain"]
+        TOOLS["Tool layer"]
+        RAG["Project knowledge base"]
+        VOICE["Voice adapter"]
+    end
+    subgraph REG["registry lane · who can be found"]
+        DISC["Registry discovery"]
+        NACOS["Nacos"]
+    end
+    subgraph PEERS["Peer services"]
+        MCP["digital-human-mcp"]
+        KA["knowledge-agent"]
+    end
+    subgraph EXT["External capabilities"]
+        LLM["DeepSeek"]
+        TTSX["Alibaba Cloud TTS"]
+        ASRX["Alibaba Cloud ASR"]
+    end
+    subgraph RTC["Realtime lane (reserved by ch19, not deployed)"]
+        LKS["livekit-server"]
+        LKA["livekit-agent"]
+        REDIS["Redis<br/>cluster control"]
+    end
+    DB[("MySQL 8 + Flyway")]
 
-> Every move follows the same shape: **story → problem → principle → architecture → one real run →
-> troubleshooting → tuning → insight → landing in the system**. Articles carry the reproducible
-> detail; videos carry the reasoning. Articles and videos are **published on the Tencent Cloud
-> developer community** and open without a login; videos are vertical, 3–5 minutes each. Article and
-> video ids also live in [`scripts/build-wiki.py`](scripts/build-wiki.py), which generates the wiki pages.
+    AUI --> CFG
+    RUI -->|"HTTP + SSE"| AGENT
+    AGENT --> LLM
+    AGENT --> TOOLS
+    AGENT --> RAG
+    AGENT --> VOICE
+    VOICE --> TTSX
+    VOICE --> ASRX
+    TOOLS -->|"MCP /mcp"| MCP
+    DISC --> KA
+    DISC --> NACOS
+    MCP -.-> NACOS
+    KA -.-> NACOS
+    AGENT --> DB
+    RUI -.->|"reserved"| LKS
+    LKS -.-> LKA
+    LKS -.->|"signaling / session routing"| REDIS
+    LKA -.->|"job dispatch"| REDIS
+```
 
-| Ch | Topic | Read | Watch |
-|----|-------|------|-------|
+This diagram: **solid edges are lanes that really run; dashed edges are ch19's reserved slots, not working features** — `livekit-server` / `livekit-agent` need algorithm images and a GPU, so they are drawn but not deployed; running the realtime lane with more than one replica requires `Redis`, the **cluster control** for those two components (shared signaling routing and job dispatch) — it is reserved the same way and is **not** used for chat memory, whose source of truth stays the `chat_message` ledger; TTS / ASR are external dependencies and this repo ships only the adapter.
+
+**This repo does not copy docs.** Deviations that only show up when you actually run the thing are written into [`docs/chNN-验收记录.md`](docs) (Chinese) with raw, reproducible output. Four of them:
+
+| Ch | What we measured | What we did |
+|----|------------------|-------------|
+| 11 | When two parallel branches write the same key, `REPLACE` **silently loses data**: no exception, no log, output drops from 2 to 1 | Every used key declares its strategy, and "what happens if you get it wrong" became a runnable contrast test |
+| 15 | A case whose **criterion was fully satisfied got 0 from the LLM judge**: the judge received the criterion and the answer but never the material that already stated the fact — **a judge that cannot see the facts calls facts fabrication** | Added a `reference` parameter to `LlmJudge` so retrieved material is handed over too; calibration samples now carry their own source material |
+| 17 | One request carried **two traceIds**: our own in the response header, the framework's in the log — Micrometer's correlation decorator **writes the same MDC key**, so last writer wins | Identity now has a single source in the filter; afterwards header == log == audit table == call tree |
+| 18 | Shipping to K8s is not "set replicas to 3": memory was **in-process**, so with several replicas a request hitting A and a session living in B looks like the AI forgot everything | Memory now reads the `chat_message` ledger (`store=jdbc`) — only then is the pod genuinely stateless |
+
+## 2. Quick start: one command brings up everything
+
+**No JDK, no Maven, no manual database setup.** The images compile from source, MySQL comes up with them, and Flyway migrations run inside the containers.
+
+```bash
+git clone https://github.com/lifuchun522/springaialibabapractice.git
+cd springaialibabapractice/deploy
+
+export DEEPSEEK_API_KEY=sk-xxxx
+docker compose -f docker-compose.quickstart.yml up -d --build
+```
+
+The first run takes a few minutes (base images, dependency download, packaging); after that it is seconds. All three containers should be `healthy`:
+
+```console
+$ docker compose -f docker-compose.quickstart.yml ps
+NAME            IMAGE                                    STATUS
+dh-quick-mysql  mysql:8.0                                Up (healthy)
+dh-quick-mcp    saa-quickstart/digital-human-mcp:local   Up (healthy)
+dh-quick-app    saa-quickstart/digital-human:local       Up (healthy)
+```
+
+Now **open it in a browser**: <http://localhost:8080/run/1>
+
+![Digital-human run page: title, opening line and model all come from the database](docs/images/quickstart-run-page.png)
+
+Everything on that screen is real, and everything on it is data: the title and opening line come from `digital_human_project`, the model name from `agent_config`, and the `1` in the address bar is the `projectId` — **the opening line changes without a release, just refresh the page**.
+
+| To verify | How |
+| --- | --- |
+| The tool really was discovered over MCP | `docker compose -f docker-compose.quickstart.yml logs digital-human \| grep 工具` → expects `MCP 远程工具已发现 1 个：showroom_query_availability` |
+| The schema was migrated by the app itself | `docker compose -f docker-compose.quickstart.yml logs digital-human \| grep Migrating` → expects the V1 migrations |
+| Run tests only, no services | `./mvnw -B -ntp test` (**offline**: H2 + fake `ChatModel`, no keys, no database) |
+
+Knobs all have defaults, so nothing must be set: `QUICK_APP_PORT` (8080), `QUICK_MCP_PORT` (8081), `QUICK_DB_PORT` (3307), `QUICK_DB_PASSWORD`;
+tear down and wipe the database with `docker compose -f docker-compose.quickstart.yml down -v`.
+
+> `deploy/docker-compose.quickstart.yml` is for **local experience** (built from source, bundled MySQL); `deploy/docker-compose.yml` deploys **pre-built images** (CI pushes images → the server runs `up -d`). Do not mix the two.
+
+### Prefer no Docker? Run the two processes locally
+
+```bash
+docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root -p 33079:3306 mysql:8
+
+export DEEPSEEK_API_KEY=sk-xxxx
+export DIGITAL_HUMAN_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai'
+export DIGITAL_HUMAN_DB_USER=root
+export DIGITAL_HUMAN_DB_PASSWORD=root
+
+./mvnw -pl digital-human spring-boot:run
+```
+
+From chapter 7 on there is also a standalone MCP server (own process, own database `digital_human_ext`); the app defaults to `http://localhost:8081/mcp`.
+Without a key the service **refuses to start** — if the key is wrong, the service should not pretend to be healthy.
+
+### Five test layers; only the two offline ones run by default
+
+```bash
+./mvnw -B -ntp clean verify                                                                     # L1 unit + L2 component (the CI blocking path)
+./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=integration -Dsurefire.excludedGroups=   # L3 real MySQL container
+./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=eval -Dsurefire.excludedGroups=          # L4 recorded-answer replay
+./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=eval-live -Dsurefire.excludedGroups=     # L5 live evaluation (needs a key)
+```
+
+> `groups` and `excludedGroups` must always be passed **together**: Surefire gives exclusion priority, so `-Dsurefire.groups=integration` alone runs nothing at all — and still reports success.
+
+## 3. The 18 chapters: articles and videos
+
+All 18 articles and all 18 videos are **published on the Tencent Cloud developer community** (by 李福春); each link opens a new page — open them in a new tab, **one article plus one video per chapter**.
+Articles carry the reproducible detail (environments and versions, dependencies and configuration, troubleshooting, completion criteria); videos rehearse the **decision process** in a "13-person round table": why this way, which alternatives were rejected, where the red lines are. Each video is 3–5 minutes.
+You can also search the community for 「降SpringAI阿里」 to see all 18.
+
+| Ch | Hexagram · Topic | Read | Watch |
+|----|------------------|------|-------|
 | 1 | 亢龙有悔 · Selection | [Article](https://cloud.tencent.com/developer/article/2752108) | [Video](https://cloud.tencent.com/developer/video/87798) |
 | 2 | 飞龙在天 · Environment | [Article](https://cloud.tencent.com/developer/article/2752106) | [Video](https://cloud.tencent.com/developer/video/87796) |
 | 3 | 见龙在田 · Base app | [Article](https://cloud.tencent.com/developer/article/2752105) | [Video](https://cloud.tencent.com/developer/video/87794) |
@@ -164,318 +206,15 @@ Only want to know how far the code has come? Jump to [chapter progress](#11-chap
 | 17 | 羝羊触藩 · Observability | [Article](https://cloud.tencent.com/developer/article/2752086) | [Video](https://cloud.tencent.com/developer/video/87797) |
 | 18 | 神龙摆尾 · K8s | [Article](https://cloud.tencent.com/developer/article/2752084) | [Video](https://cloud.tencent.com/developer/video/87795) |
 
-**How to watch**: the 18 videos map one-to-one onto the 18 articles. Articles give the reproducible
-detail (versions, dependencies, troubleshooting, completion criteria); videos rehearse the **decision
-process** — why this way, which alternatives were rejected, where the red lines are. The intended
-rhythm is **video first for the trade-off, article second for the code**; reading the article first
-tends to lose the decision inside the detail.
-## 7. One-command startup: a single `docker compose`
+If you only have time for three passages, take these (each is counter-intuitive **and** backed by evidence):
 
-**No JDK, no Maven, no manual database setup.** The images compile from source, MySQL comes up with
-them, and Flyway migrations run inside the containers.
+1. **On the realtime path, "one hop less" is often a pessimisation** (ch 3): once the realtime process connects to the model itself, a second context and a second tool registry grow there — and every later chapter has to be changed twice.
+2. **The model never executes code, it only writes arguments** (ch 6): therefore **a prompt is not a security boundary** — narrowing capability takes structure, not tone.
+3. **The boundary of your tests is the boundary of your mocks** (ch 15): mocking `ChatModel` entirely hard-codes "the model always returns the text we expect", while model output is exactly the object under test.
 
-```bash
-git clone https://github.com/lifuchun522/springaialibabapractice.git
-cd springaialibabapractice/deploy
+## 4. Branches and tags
 
-export DEEPSEEK_API_KEY=sk-xxxx
-docker compose -f docker-compose.quickstart.yml up -d --build
-```
-
-The first run takes a few minutes (base images, dependency download, packaging); after that it is
-seconds. All three containers should be `healthy`:
-
-```console
-$ docker compose -f docker-compose.quickstart.yml ps
-NAME            IMAGE                                    STATUS
-dh-quick-mysql  mysql:8.0                                Up (healthy)
-dh-quick-mcp    saa-quickstart/digital-human-mcp:local   Up (healthy)
-dh-quick-app    saa-quickstart/digital-human:local       Up (healthy)
-```
-
-Now **open it in a browser**: <http://localhost:8080/run/1>
-
-![Digital-human run page: title, opening line and model all come from the database](docs/images/quickstart-run-page.png)
-
-Everything on that screen is real, and everything on it is data: the title and opening line come from
-`digital_human_project`, the model name from `agent_config`, and the `1` in the address bar is the
-`projectId` — **the opening line changes without a release, just refresh the page** (the deliverable
-of chapters 3 and 4).
-
-| To verify | How |
-| --- | --- |
-| The tool really was discovered over MCP | `docker compose -f docker-compose.quickstart.yml logs digital-human \| grep 工具` → expects `MCP 远程工具已发现 1 个：showroom_query_availability` |
-| The schema was migrated by the app itself | `docker compose -f docker-compose.quickstart.yml logs digital-human \| grep Migrating` → expects the V1 migrations |
-| Run tests only, no services | `./mvnw -B -ntp test` (**offline**: H2 + fake `ChatModel`, no keys, no database) |
-
-Knobs (all defaulted in `docker-compose.quickstart.yml`, so nothing must be set):
-`QUICK_APP_PORT` (8080), `QUICK_MCP_PORT` (8081), `QUICK_DB_PORT` (3307), `QUICK_DB_PASSWORD`.
-
-Tear down and wipe the database: `docker compose -f docker-compose.quickstart.yml down -v`.
-
-> One-command startup uses `deploy/docker-compose.quickstart.yml` (local experience: built from source
-> plus a bundled MySQL). `deploy/docker-compose.yml` is the one that deploys **pre-built images**
-> (CI pushes images → server runs `up -d`). Do not mix the two.
-
-### Prefer no Docker? Run the two processes locally
-
-```bash
-git clone https://github.com/lifuchun522/springaialibabapractice.git
-cd springaialibabapractice
-./mvnw -B -ntp test
-```
-
-Since chapter 15 the tests are split into five layers by JUnit tag, and only the two offline layers run by
-default (142 tests: digital-human 133 + mcp 5 + knowledge-agent 4):
-
-```bash
-./mvnw -B -ntp clean verify                                                                    # L1 unit + L2 component (the CI blocking path)
-./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=integration -Dsurefire.excludedGroups=  # L3 real MySQL container
-./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=eval -Dsurefire.excludedGroups=         # L4 recorded-answer replay
-./mvnw -B -ntp test -pl digital-human -Dsurefire.groups=eval-live -Dsurefire.excludedGroups=    # L5 live evaluation (needs a key)
-```
-
-> `groups` and `excludedGroups` must always be passed **together**: Surefire gives exclusion priority, so
-> `-Dsurefire.groups=integration` alone runs nothing at all — and still reports success.
-
-Running a real agent chain needs MySQL 8 and a DeepSeek key:
-
-```bash
-docker run -d --name dh-mysql -e MYSQL_ROOT_PASSWORD=root -p 33079:3306 mysql:8
-
-export DEEPSEEK_API_KEY=sk-xxxx
-export DIGITAL_HUMAN_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai'
-export DIGITAL_HUMAN_DB_USER=root
-export DIGITAL_HUMAN_DB_PASSWORD=root
-
-./mvnw -pl digital-human spring-boot:run
-```
-
-```bash
-# Smallest possible chain: no project, no knowledge base — just prove service + model channel are alive
-curl -s "http://localhost:8080/api/chat?q=用一句话介绍你自己"
-```
-
-```json
-{
-  "reply": "深圳展厅每天开放时间是早上九点到晚上六点，不过周一闭馆，所以要避开周一去哦。",
-  "traceId": "b68e4df4ff75",
-  "modelCalls": 2,
-  "events": ["agent.start", "model#1", "tool:knowledge_search", "model#2", "agent.end"]
-}
-```
-
-(the STT → Agent → TTS chain did not change);
-`events` / `modelCalls` / `traceId` are for whoever debugs it.
-**The first payoff of an agent framework is observability, not prettier answers.**
-
-## 8. Measured deviations (not copied from docs)
-
-Docs give you APIs, articles give you direction, but "make the chain actually run and match the acceptance criteria" is a stretch nobody walks with you: versions drift, parameter semantics change, snippets do not hold on the version you installed. So the repo writes the deviations into `docs/chNN-验收记录.md` (Chinese) instead of hiding them in commit messages:
-
-Docs give you APIs, articles give you direction, but "make the chain actually run and match the
-acceptance criteria" is a stretch nobody walks with you: versions drift, parameter semantics change,
-snippets do not hold on the version you installed. So the repo writes the deviations into
-`docs/chNN-验收记录.md` (Chinese) instead of hiding them in commit messages:
-
-| Ch | What the article says | What we measured here | What we did |
-|----|-----------------------|-----------------------|-------------|
-| 7 | A failed MCP client silently yields "no tools" | It throws `McpTransportException` (404 on `/sse`) — behaviour differs | Documented the gap; made an empty tool list a fail-fast at startup |
-| 8 | `similarityThreshold` controls retrieval | Threshold 0 makes the "no basis, refuse" branch unreachable (score 0 still hits) | Wide candidate fetch from the store, separate relevance floor in business code |
-| 9 | Attach the framework's tool-retry interceptor | Tool failures are already converted to readable results at the tool boundary, so the outer interceptor **never fires** | Failure policy owned by the tool boundary; no configured-but-dead channel left behind |
-| 9 | Spring AI Alibaba and Spring AI share one version set | `agent-framework → graph-core` depends on MCP SDK **0.14.0** while Spring AI 1.1.2 uses **0.17.0**; the enforcer gate stops the build | Unified on 0.17.0 and proven with **real remote tool calls** (this also explains the chapter 7 protocol gap) |
-| 10 | Routing accuracy is just "is the model good?" | Same 20 samples, same stated rules, three runs in a row: **17 / 16 / 16**. And the three "misses" were **our own mislabels** | Rules live in config, not in someone's head; routing calls pinned to `temperature: 0` → two reruns matched **line by line** |
-| 11 | Reduction strategy is just "a setting" | When two parallel branches write the same key, `REPLACE` **silently loses data**: no exception, no log, output drops from 2 to 1 | Every used key declares its strategy; "what happens if you get it wrong" became a runnable contrast test |
-| 12 | Splitting into multi-agent makes the system "more capable" | When three roles share tools and memory, the context budget is paid **every turn** (12 tool descriptions, related to the question or not); the router really did misroute once | Tool ownership frozen as "no two roles share a tool" (assertable); memory isolated per `role:sessionId`; the criterion is "one persona no longer fits", not "many tools" |
-| 13 | The A2A/Nacos starters named in the article just work | `spring-ai-alibaba-starter-a2a-server`, `-a2a-client` and `-nacos-discovery` **do not exist** in 1.1.2.2 (Maven Central has nothing under those coordinates) | Implemented a thin layer ourselves from the protocol semantics: capability card + task lifecycle + streaming + version negotiation, with Nacos as just one discovery implementation |
-| 14 | "The source I read says so" | The same code **behaves differently** on the tag and on main: in 1.1.2.2 `ToolRetryInterceptor` retries only thrown exceptions, while main also retries non-success responses | Truth pinned to the tag; the locator script keeps the version as an explicit constant, so a dependency bump makes the behaviour assertion fail and warn |
-| 15 | Give an LLM judge a criterion and it scores quality | First evaluation run, a case whose **criterion was fully satisfied got 0 from the judge**: the criterion said "no discounts invented beyond the material", but the judge only received the criterion and the answer, never the material that already stated "7.5 off from 20 units" — **a judge that cannot see the facts calls facts fabrication** | Added a `reference` parameter to `LlmJudge` so retrieved material is handed over too; calibration samples must carry their own source material, otherwise you measure "are my samples complete", not "is the judge accurate" |
-| 15 | Assert "must refuse" for the security suite | Twice, the same case: the model clearly refused both times, but the wording changed from "I **won't play** that role" to "I **won't take** that 'new role'" — **two false reds** | Phrasing is not a rule: the four security cases became "rules for hard constraints on forbidden content + judge for whether the refusal is explicit", and the stopgap of adding words to the marker list was reverted |
-| 15 | No basis → refuse, without calling the model | That branch is **unreachable in the current configuration**: local hashing embeddings return an unrelated chunk for any Chinese question (score ≈ 0.0995 > `min-score=0.01`), so the "has basis" branch runs and the model itself says "no relevant content in the material" | **Not fixed**: it belongs to chapter 8's threshold and knowledge contract; it stays in the dataset as a **permanently failing** case (`pk-003`), so the L4 replay reproduces the defect every run |
-| 16 | Add a health check and the service is deliverable | A real load test hit a run where the stream sent **not a single chunk**: HTTP 200, connection closed cleanly, the client received nothing — and the ledger recorded that assistant turn as `COMPLETED` (length 0). The same prompt through the blocking endpoint fails loudly with `EMPTY_RESPONSE` | The streaming path now fails explicitly via `switchIfEmpty` and the ledger records FAILED; an assertion pins that the conversation lock is released after a failure (`EmptyStreamContractTest`) — one semantic must behave the same on both contracts |
-| 16 | Layering means moving files into packages | Writing the dependency direction as ArchUnit rules **caught a real violation on the very first run**: `ToolController` injected a repository directly (authorization, ownership and querying all inside the HTTP layer). The same run showed **my own rule was too wide** (`..web..` also matched Spring's `org.springframework.web..`, 23 false positives) | Added `ToolAuditService` so the use case lives in the service layer; narrowed the rule to `com.example.digitalhuman.web..` — a gate is code too, and both its width and its narrowness need calibrating against a real violation |
-| 16 | If it runs locally, the service is fine | A real streaming request printed a framework warning: `default Spring MVC SimpleAsyncTaskExecutor … not suitable for production use under load` (a new thread per request, no bounds, no queue). **Every functional test passed**; the delivery criterion did not | Configured `WebAsyncConfig`: bounded pool (4/32/200) + explicit 5-minute timeout + graceful shutdown; the warning no longer appears on the same real path after the fix |
-| 16 | Externalizing config is enough | compose had `${APP_DEEPSEEK_API_KEY}` — unset means empty string, so the gap travelled into the container and surfaced as a 401 on the first request (exactly the article's chain A) | Required items became `${VAR:?message}`: `docker compose config` now refuses to render and prints which variable is missing and where to declare it; the probe also moved from `/actuator/health` to `/actuator/health/readiness` |
-| 17 | A traceId means the chain is joined | One request carried **two different ids**: the response header and call tree used our own `a6d63cf3…`, while the log's `traceId` was the framework's `6d5f033b…` — Micrometer's correlation decorator **writes the same MDC key**, so last writer wins | The filter now **prefers the framework's current span traceId** (as the article's V1 does), giving identity a single source; afterwards header == log == audit table == call tree |
-| 17 | Tool audit and logs naturally line up | `ConversationRequest` minted its own 12-char traceId while the HTTP side used a 32-char one: response header `9a3abf6d…` versus `tool_call_audit.trace_id = c7c2b3418b6c` — **the two tables can never be joined**, and the tool audit is the only truth about what the model actually called | traceId is inherited from the request context, generated only when there is none; pinned by an assertion, and the audit row now matches the response header |
-| 17 | Adding instrumentation produces data | Failure-category metrics were **silently dropped by Prometheus**: all meters sharing a name must share the same tag key set, so adding `failure.type` only on failures invalidates that whole batch — one WARN line, business completely fine | `failure.type=none` is registered when the meter is created and only its value changes; afterwards both `failure_type="INPUT_INVALID"` and `"none"` are queryable |
-| 17 | A failed request surely leaves a trace | Early failures (missing project, invalid input) throw **before** any business instrumentation, so the diagnostics view was an empty tree; after adding the HTTP layer its category was still empty — because `@ExceptionHandler` converts the exception into a response inside the servlet, invisible to filters | The filter wraps the whole request in an HTTP-layer span and classifies **by response status** (at HTTP level the status code is the fact); an early failure now leaves a tree carrying `INPUT_INVALID` |
-
-
-
-## 9. What you get (and what you can verify here)
-
-The series gives judgements; the repo gives evidence. Every chapter maps to a branch, a PR, a tag
-and an acceptance record quoting raw output:
-
-| Ch | Capability | What you can verify yourself |
-|----|-----------|------------------------------|
-| 1 | Selection and layering | Business code has exactly one `ChatClient` exit; no low-level model object leaks |
-| 2 | Environment gate | JDK / Maven / dependency convergence failures break the `validate` phase |
-| 3 | Digital-human base | Register/login, project CRUD, run page with SSE chat |
-| 4 | Model governance | provider/model in the database, model catalog validation, deterministic error semantics (400 / 502 / 504) |
-| 5 | Memory and ledger | Memory is a projection, `chat_message` is the fact; cancels and failures are recorded too |
-| 6 | Tool gate | Read/write tools separated; writes need a single-use confirmation token; every call is audited, timed out and retried |
-| 7 | MCP | Showroom booking split into its own process and database; the app discovers and calls it over MCP |
-| 8 | RAG | Per-project knowledge base; isolation enforced by a **metadata contract**, not by retrieval luck; refuses when there is no basis |
-| 9 | Agent brain | Full node event sequence, a hard cap on model calls, tool failures retried without killing the turn |
-| 10 | Orchestration | Four flow-agent patterns — sequential / parallel / routing / looping — with node-level tracing |
-| 11 | Graph runtime | Exportable, interruptible, resumable state graph; reduction strategies declared explicitly |
-| 12 | Multi-agent | Three roles, each with its own prompt, tools and memory; router picks the first hop, handoffs are bounded |
-
-### Three boundaries that hold across the whole repo
-
-1. **The model never fills in identity.** Project/user ids travel out-of-band in `ToolContext`,
-   never inside the tool's JSON Schema — the model cannot see them, so it cannot get them wrong.
-2. **Failures stop at the tool boundary.** Bounded retries plus a fallback result hand the fact
-   "this tool is unavailable right now" to the model instead of killing the conversation.
-3. **Budgets live in engineering, not in the prompt.** Model calls per request have a hard cap and
-   exceeding it ends the run **explicitly** (not by timeout), leaving event evidence behind.
-
-
-## 10. Baseline: documented is not enough, it must fail `validate`
-
-**Three lanes, not one.** The admin lane only writes configuration; the conversation lane is the only
-one that touches models and audio; the registry lane only answers "who can be found".
-They are drawn separately because the first question this diagram must answer is
-*"which lane does a new capability belong to?"* — a flat list of components cannot answer it.
-
-```mermaid
-flowchart TB
-    subgraph CLIENT["Clients"]
-        AUI["Operator console<br/>sign-in · project CRUD · config · publish"]
-        RUI["Public runtime entry<br/>guest name · subtitles · audio · tags · avatar"]
-    end
-
-    subgraph APP["digital-human: Spring Boot 3.5.10"]
-        API["REST + SSE<br/>auth / projects / chat / rag / agent"]
-        CFG["Config catalog &amp; publish<br/>voice · avatar · stance · KB · MCP · A2A"]
-        VOICE["Voice adapter<br/>synthesis · recognition · temp credentials"]
-        AGENT["ReactAgent brain<br/>Hooks for boundaries + interceptors for tracing"]
-        TOOLS["Tool layer<br/>read-only · write+token · audit/timeout/retry"]
-        RAG["Project knowledge base<br/>metadata-contract isolation"]
-        DISC["Registry discovery<br/>A2A instances + MCP service catalog"]
-        SNAP[("Config snapshot<br/>published version immutable")]
-    end
-
-    subgraph EXT["External capabilities"]
-        LLM["DeepSeek<br/>OpenAI-compatible"]
-        TTSX["Alibaba Cloud TTS<br/>external dependency"]
-        ASRX["Alibaba Cloud ASR<br/>external dependency"]
-    end
-
-    subgraph RTC["Realtime lane · reserved by ch19, not deployed"]
-        LKS["livekit-server<br/>WebRTC signaling + media relay"]
-        LKA["livekit-agent<br/>lip-sync / expression inference"]
-    end
-
-    subgraph REG["Registry lane"]
-        NACOS["Nacos<br/>official image + shared MySQL"]
-        NACOSDB[("nacos_config<br/>same MySQL instance")]
-    end
-
-    subgraph PEERS["Peer services"]
-        MCP["digital-human-mcp<br/>showroom booking: own process + own DB"]
-        KA["knowledge-agent<br/>A2A capability card"]
-    end
-
-    DB[("MySQL 8<br/>business DB · Flyway V1–V6")]
-
-    AUI -->|"HTTP"| API
-    API --> CFG
-    CFG --> SNAP
-    RUI -->|"HTTP + SSE"| API
-    API --> AGENT
-    AGENT -->|"ChatClient"| LLM
-    AGENT --> TOOLS
-    AGENT --> RAG
-    API -->|"synthesis / recognition"| VOICE
-    VOICE --> TTSX
-    VOICE --> ASRX
-    TOOLS -->|"MCP STREAMABLE /mcp"| MCP
-    DISC -->|"capability card + task"| KA
-    DISC --> NACOS
-    MCP -.->|"catalog registration"| NACOS
-    KA -.->|"instance registration"| NACOS
-    NACOS --> NACOSDB
-    APP --> DB
-    MCP --> DB
-    RUI -.->|"reserved: audio channel"| LKS
-    LKS -.->|"reserved: worker"| LKA
-```
-
-This diagram answers **"which lane does a new capability belong to?"** — solid edges are lanes this
-repo actually runs; dashed edges are ch19's reserved slots. The admin lane only writes configuration
-and never reaches the network; only the conversation lane touches models and audio; the registry lane
-only answers "who can be found" and carries neither tool schemas nor business config as truth.
-
-> **Dashed = reserved, not "already working".** `livekit-server` / `livekit-agent` are drawn but not
-> deployed by ch19 (they need algorithm images and a GPU), so real lip-sync and expression inference is
-> still outstanding debt. TTS / ASR are external dependencies: this repo ships only a vendor-neutral
-> adapter. `nacos` carries registration and discovery only — **never tool schemas or business config
-> as a second source of truth.** See section 8 of the
-> [ch19 document](docs/ch19-数字人功能升级.md) for the per-item accounting.
-
-| Item | Value |
-|------|-------|
-| JDK | 21 LTS (enforcer pins `[21,22)`) |
-| Maven | 3.9.11, supplied by the committed `./mvnw` (enforcer pins `[3.9,)`) |
-| Spring Boot | 3.5.10 |
-| Spring AI | 1.1.2 |
-| Spring AI Alibaba | 1.1.2.2 (`v2.0.0-M1.1` is pre-release: watched, not shipped) |
-| Model | DeepSeek, default `deepseek-flash` |
-| Data | MySQL 8 + Flyway in runtime; H2 in tests |
-
-The baseline is enforced, not documented: `mvnw` pins Maven, `requireJavaVersion` pins the JDK,
-`dependencyConvergence` pins dependency versions — miss any of them and the build fails at `validate`
-(it has already caught three real version divergences).
-
-There is exactly **one model channel**: DeepSeek over the OpenAI-compatible protocol
-(`spring.ai.model.chat=openai`, key from `DEEPSEEK_API_KEY`). The article series uses DashScope, but
-this repo refuses to keep a configured-but-unused channel; it will be added in the chapter that
-needs it. Without a key the service **refuses to start** (the SDK asserts a non-empty API key at
-startup) — if the key is wrong, the service should not pretend to be healthy.
-
-**Running both processes (from chapter 7 on)**:
-
-```bash
-# 1) MCP server (it owns its own database)
-docker exec -i <mysql> mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS digital_human_ext"
-MCP_DB_URL='jdbc:mysql://127.0.0.1:33079/digital_human_ext?...' ./mvnw -pl digital-human-mcp spring-boot:run
-
-# 2) Digital-human service (defaults to http://localhost:8081/mcp)
-./mvnw -pl digital-human spring-boot:run
-```
-
-Startup logs should show `MCP 远程工具已发现 1 个：showroom_query_availability`. If the list is empty and
-`digital-human.mcp.fail-fast=true`, the service **fails to start** and explains the common causes.
-
-## 11. Chapter progress: what already runs
-
-| Ch | Hexagram · Topic | Branch | Tag | Status |
-|----|------------------|--------|-----|--------|
-| 1 | 亢龙有悔 · Selection | `chapter/01-value-selection` | `ch01` | ✅ Layering + single `ChatClient` exit |
-| 2 | 飞龙在天 · Environment | `chapter/02-baseline-env` | `ch02` | ✅ mvnw + version gates + env self-check |
-| 3 | 见龙在田 · Base app | `chapter/03-digital-human-demo` | `ch03` | ✅ Tables + auth + project CRUD + run page |
-| 4 | 鸿渐于陆 · Model | `chapter/04-chat-model` | `ch04` | ✅ provider in DB + catalog + deterministic errors |
-| 5 | 潜龙勿用 · Memory | `chapter/05-memory-streaming` | `ch05` | ✅ Memory + SSE streaming + message ledger |
-| 6 | 利涉大川 · Tools | `chapter/06-tools` | `ch06` | ✅ Read/write split + human confirmation + audit & timeout |
-| 7 | 突如其来 · MCP | `chapter/07-mcp` | `ch07` | ✅ Standalone MCP server + remote discovery and calls |
-| 8 | 震惊百里 · RAG | `chapter/08-rag` | `ch08` | ✅ Per-project KB + metadata contract + cited answers, refusal without basis |
-| 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | `ch09` | ✅ Event stream + hard model-call cap + tool-boundary retry + ledger |
-| 10 | 双龙取水 · Workflows | `chapter/10-workflow-agents` | `ch10` | ✅ Four flow-agent patterns + node-level tracing (timings, emissions, sequence) |
-| 11 | 鱼跃于渊 · Graph core | `chapter/11-graph-core` | `ch11` | ✅ State graph + explicit reduction strategies + interrupt + MySQL checkpoints (survives restart) |
-| 12 | 时乘六龙 · Multi-agent | `chapter/12-multi-agent` | `ch12` | ✅ Three roles, each with its own prompt/tools/memory + router + handoff + max-hops |
-| 13 | 密云不雨 · A2A | `chapter/13-a2a-nacos` | `ch13` | ✅ Standalone knowledge agent + capability card, task lifecycle, version negotiation, swappable discovery ([article](https://cloud.tencent.com/developer/article/2752092)) |
-| 14 | 损则有孚 · Source PR | `chapter/14-source-pr` | `ch14` | ✅ Behaviour pinned to 1.1.2.2 line numbers + minimal reproduction + upstream issue draft ([article](https://cloud.tencent.com/developer/article/2752091)) |
-| 15 | 龙战于野 · Evaluation | `chapter/15-eval-guard` | `ch15` | ✅ Five test layers (L1 unit / L2 MockWebServer at the HTTP boundary / L3 Testcontainers / L4 snapshot replay / L5 live evaluation) + six regression suites, 24 cases + judge calibration ([article](https://cloud.tencent.com/developer/article/2752089)) |
-| 16 | 履霜冰至 · Service | `chapter/16-spring-service` | `ch16` | ✅ Dependency-direction gate (6 ArchUnit rules) + startup deployment contract + health groups (liveness / readiness) + SSE heartbeat with a bounded async executor + production boundary (`/internal/llm/v1` is 404 under prod) + executable API contract ([article](https://cloud.tencent.com/developer/article/2752087)) |
-| 17 | 羝羊触藩 · Observability | `chapter/17-observability-admin` | `ch17` | ✅ Identity quad end to end (traceId/projectId/sessionId/threadId) + cross-thread and cross-process propagation + a four-layer call tree (http/model/tool/rag) + nine failure categories + diagnostics endpoint and Prometheus metrics ([article](https://cloud.tencent.com/developer/article/2752086)) |
-| 18 | 神龙摆尾 · K8s | `chapter/18-k8s-production` | `ch18` | ✅ Non-root image (uid 10001 + container-aware heap) + probe semantics split three ways + externalized state (memory reads the ledger) + `maxUnavailable: 0` with graceful shutdown (an in-flight stream answered in full under SIGTERM) + K8s manifests with structural validation ([article](https://cloud.tencent.com/developer/article/2752084)) |
-
-### Delivery flow: issue → branch → PR → main → tag
-
-`main` is always the latest working state; no chapter writes to `main` directly:
+`main` is always the latest working state, and **no chapter ever writes to `main` directly**:
 
 ```text
 Issue (capability and acceptance criteria for this chapter)
@@ -484,71 +223,48 @@ Issue (capability and acceptance criteria for this chapter)
              └─ merge into main → tag chNN
 ```
 
-Commits are `type(chNN): description`; the tag sits on the merge commit in `main` and its message
-names the branch, the PR and what was delivered — so "what did chapter N actually ship" is answerable
-from the tag itself.
-## 12. The article series: three more judgements worth reading
+- **Branch**: `chapter/NN-topic`, one per chapter, carrying only that chapter's changes. Branches for chapters 1–14 are kept on the remote for direct comparison; from chapter 15 on they are cleaned up after merge, so go by tag.
+- **Tag**: `chNN`, placed on that chapter's merge commit in `main`. The tag message names the **branch, the PR and what the chapter delivered/verified** — `git show ch16 --no-patch` answers "what did chapter 16 actually ship, and how was it verified" without digging through the PR.
+- **Reading one chapter's code**: `git switch --detach ch11`, or `git diff ch10 ch11` to see only what that chapter changed.
+- **Non-chapter tag `v0.1.0`**: first release of the repository operations work (GitHub Ops: issues, PRs, discussions, Pages, security governance) — unrelated to the 18 chapters.
+- **Chapter 19**: diagram and plan are ready ([ch19 doc](docs/ch19-数字人功能升级.md), [OpenSpec change](openspec/changes/ch19-digital-human-upgrade/)), no tag yet.
 
-「降 SpringAI 阿里」十八掌 (Learning Spring AI Alibaba in 18 moves) on the Tencent Cloud developer
-community, by 李福春. Every article and video link is in
-[All 18 chapters](#6-all-18-chapters-articles--videos); the front door is
-[chapter 1 · selection](https://cloud.tencent.com/developer/article/2752108)
-([video](https://cloud.tencent.com/developer/video/87798)) — it decides whether the following 17
-chapters make you rework anything.
+| Ch | Hexagram · Topic | Branch | Tag |
+|----|------------------|--------|-----|
+| 1 | 亢龙有悔 · Selection | `chapter/01-value-selection` | `ch01` |
+| 2 | 飞龙在天 · Environment | `chapter/02-baseline-env` | `ch02` |
+| 3 | 见龙在田 · Base app | `chapter/03-digital-human-demo` | `ch03` |
+| 4 | 鸿渐于陆 · Model | `chapter/04-chat-model` | `ch04` |
+| 5 | 潜龙勿用 · Memory | `chapter/05-memory-streaming` | `ch05` |
+| 6 | 利涉大川 · Tools | `chapter/06-tools` | `ch06` |
+| 7 | 突如其来 · MCP | `chapter/07-mcp` | `ch07` |
+| 8 | 震惊百里 · RAG | `chapter/08-rag` | `ch08` |
+| 9 | 或跃在渊 · ReactAgent | `chapter/09-react-agent` | `ch09` |
+| 10 | 双龙取水 · Workflows | `chapter/10-workflow-agents` | `ch10` |
+| 11 | 鱼跃于渊 · Graph core | `chapter/11-graph-core` | `ch11` |
+| 12 | 时乘六龙 · Multi-agent | `chapter/12-multi-agent` | `ch12` |
+| 13 | 密云不雨 · A2A | `chapter/13-a2a-nacos` | `ch13` |
+| 14 | 损则有孚 · Source PR | `chapter/14-source-pr` | `ch14` |
+| 15 | 龙战于野 · Evaluation | `chapter/15-eval-guard` | `ch15` |
+| 16 | 履霜冰至 · Service | `chapter/16-spring-service` | `ch16` |
+| 17 | 羝羊触藩 · Observability | `chapter/17-observability-admin` | `ch17` |
+| 18 | 神龙摆尾 · K8s | `chapter/18-k8s-production` | `ch18` |
+| 19 | 震雷百里 · Digital-human upgrade | 🚧 not yet cut | — |
 
-If you only have time for three passages, take these — each is counter-intuitive **and** backed by evidence:
-
-1. **On the realtime path, "one hop less" is often a pessimisation** (chapter 3): once the realtime
-   process connects to the model itself, a second context and a second tool registry grow there —
-   and **every later chapter has to be changed twice**.
-2. **The model never executes code, it only writes arguments** (chapter 6): therefore **a prompt is
-   not a security boundary**. "Please do not modify data" is a probabilistic constraint: it lowers
-   the chance of an incident without changing the capability. Narrowing capability takes structure,
-   not tone.
-3. **The boundary of your tests is the boundary of your mocks** (chapter 15): mocking `ChatModel`
-   entirely hard-codes "the model always returns the text we expect" — while model output is exactly
-   the object under test, not a background condition.
-
-**This is for you if**: you build AI / agent applications in Java or Spring Boot; you are choosing
-between Spring AI, Spring AI Alibaba, AgentScope and LangChain4j and want an evidence-based
-comparison; your project runs but every new requirement moves the structure; you need to deliver,
-deploy and be evaluated rather than demo.
-
-**Not for you if**: you want a "first ChatBot in 10 minutes" tutorial (official docs are faster);
-you are on Python (except the protocol parts of chapters 7 and 13, everything here is a Spring-side
-engineering decision); you want a ready-made framework — this content delivers **contracts and judgements**.
-
-> Base first, then layers; layers first, then multiplicity; rails first, then visibility; visibility first, then shipping.
-
-## Layout
+## Layout and conventions
 
 ```text
-pom.xml                 Parent POM: BOM-managed versions + enforcer baseline gates
-mvnw / mvnw.cmd         Maven Wrapper: the Maven version is pinned in the repo
-digital-human/          The app: ChatClient exit, tools, memory, RAG, ReactAgent, MCP client
-digital-human-mcp/      Showroom-booking MCP server: own process, own database
-deploy/                 Docker Compose, remote deploy script, DingTalk notification
-.github/workflows/      CI (build + test) and release (build → images → deploy → notify)
-scripts/                Env self-check, wiki generator, Projects sync
-docs/                   Series guide + per-chapter design docs and acceptance records
+digital-human/         The app: ChatClient exit, tools, memory, RAG, ReactAgent, MCP client
+digital-human-mcp/     Showroom-booking MCP server: own process, own database
+knowledge-agent/       A2A knowledge agent: own process, capability card
+deploy/                Docker Compose, K8s manifests, remote deploy script
+docs/                  Series guide + per-chapter design docs and acceptance records
+scripts/               Env self-check, wiki generator, Projects sync, per-chapter evidence
 ```
 
-## Secrets
-
-- Real keys live in environment variables only, or in a local `.env.local` / `application-local.yml`
-  (both git-ignored).
-- The repo only ever contains placeholders such as `.env.example` with `sk-xxxx`.
-- Before committing: `git diff --cached | findstr sk-` — if a real key shows up, do not commit.
-
-## Conventions
-
-- Framework versions come from BOMs; submodules never declare them.
-- Business code depends on `ChatClient` only, never on low-level model objects.
-- One commit per chapter; messages are `type(chNN): description`.
-- `.ps1` scripts are saved as UTF-8 with BOM (required by PowerShell 5.1).
-- The single source of the series guide is `docs/系列导读.md`; the wiki (`Home` + one page per
-  chapter) and Projects are generated by `scripts/build-wiki.py` and `scripts/sync-github-project.py`
-  — do not edit them by hand.
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or PR; if you are unsure whether something is a defect, use [Discussions](https://github.com/lifuchun522/springaialibabapractice/discussions).
+- Real keys live in **environment variables only**, or in a local `.env.local` / `application-local.yml` (both git-ignored); the repo only ever contains placeholders such as `sk-xxxx`.
+- The single source of the series guide is [`docs/系列导读.md`](docs/系列导读.md); the wiki and Projects are generated by [`scripts/build-wiki.py`](scripts/build-wiki.py) and [`scripts/sync-github-project.py`](scripts/sync-github-project.py) — **do not edit them by hand**.
 
 ## License
 
@@ -556,7 +272,6 @@ docs/                   Series guide + per-chapter design docs and acceptance re
 
 <div align="center">
 
-If this repo saved you some debugging, a **star** ⭐ helps. Found a gap? Open an issue with your raw output —
-articles give direction, repos give evidence.
+If this repo saved you some debugging, a **star** ⭐ helps. Found a gap? Open an issue with your raw output — articles give direction, repos give evidence.
 
 </div>
