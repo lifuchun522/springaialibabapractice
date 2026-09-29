@@ -113,14 +113,52 @@ $ gh ruleset check main | grep -A1 required_status_checks
 | 8.7 | CI 检查已挂为 main 的必需状态检查 | ✅ | 第四节；第 05 保的实测拒绝输出见 05 文档 4.3 |
 | 8.8 | workflow 台账与目录实际文件一致 | ✅ | 3.1 |
 
-### 一处如实说明
+### 一处如实说明 → 已补齐
 
-`deploy-gate.yml` 的「运行进入 waiting 等审批」这一点，需要**工作流先推到默认分支**才能手动触发，
-因此本轮无法在推送前演示 waiting 状态。已验证的等价事实是：
-workflow 文件本身合法（推送到分支后 GitHub 的 workflow 解析不会报错）、
-`production` 环境的 `required_reviewers` 保护规则已生效（3.3）、环境级配置通道可用（3.4）。
-**待办**：PR 合并后跑一次 `gh workflow run deploy-gate.yml -f reason=首次演练`，
-把 waiting → approve → success 的三段输出补进本节。
+`deploy-gate.yml` 的「运行进入 waiting 等审批」这一点，原本因为「工作流必须先存在于默认分支才能手动触发」
+而无法在推送前演示。PR #71 合并后已完整演练：
+
+```console
+$ gh workflow list
+deploy-gate	active	369717825
+Deploy Pages	active	369717826
+gh-ops-weekly	active	369715087
+...
+
+$ gh workflow run deploy-gate.yml -f reason="首次演练：验证 production 环境人工闸门"
+https://github.com/lifuchun522/springaialibabapractice/actions/runs/36514136378
+
+# ① waiting：job 停在闸门上等审批
+$ gh run view 36514136378 --json status,jobs --jq '{status,jobs:[.jobs[]|{name,status}]}'
+{"status":"waiting","jobs":[{"name":"生产闸门（需人工审批）","status":"waiting"}]}
+
+# ② 读 pending_deployments，确认审批人就是 production 环境的 required_reviewers
+$ gh api repos/lifuchun522/springaialibabapractice/actions/runs/36514136378/pending_deployments \
+    --jq '.[0] | {environment:.environment.name, can_approve:.current_user_can_approve,
+                  reviewers:[.reviewers[].reviewer.login]}'
+{"environment":"production","can_approve":true,"reviewers":["lifuchun522"]}
+
+# ③ 审批（API 等价于界面上点 Approve and deploy）
+$ gh api -X POST repos/lifuchun522/springaialibabapractice/actions/runs/36514136378/pending_deployments \
+    --input approve.json         # {"environment_ids":[22980207832],"state":"approved",...}
+（返回 deployment 记录）
+
+# ④ 闸门放行，运行成功
+$ gh run view 36514136378 --json status,conclusion --jq '{status,conclusion}'
+{"status":"completed","conclusion":"success"}
+
+$ gh run view 36514136378 --log | grep -E 'gate reached|目的|触发人'
+environment gate reached
+目的：首次演练：验证 production 环境人工闸门
+触发人：lifuchun522
+```
+
+**waiting → approve → success 三段全部留档**：闸门确实在拦，而且拦住之后必须有明确审批才放行。
+
+### 4.1 环境级配置在闸门运行中的实际值
+
+同上一次运行的日志：`APP_ENV（环境级 Variable）= production`
+——证明环境级 Variable 在引用该 environment 的 job 内可见，3.4 建的通道是通的。
 
 ## 六、明确不做
 

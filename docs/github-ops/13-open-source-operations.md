@@ -229,6 +229,24 @@ path: docs/github-ops/metrics/*-$(date -u +%Y-%m-%d)-*.json   # ← 错在这里
 这是本仓库第三道同类门禁（前两道是架构图一致性与索引死链），共同规律是：
 **静默损坏不会让任何东西失败，只会在下一次被人发现时已经晚了。**
 
+### 5.6 修复后重跑：成功，且没有直推 main
+
+```console
+$ gh workflow run gh-ops-weekly.yml -f commit_draft=false
+https://github.com/lifuchun522/springaialibabapractice/actions/runs/36514140832
+
+$ gh run view 36514140832 --json status,conclusion,jobs --jq '{status,conclusion,jobs:[.jobs[]|{name,status,conclusion}]}'
+{"status":"completed","conclusion":"success",
+ "jobs":[{"name":"采集运营指标","status":"completed","conclusion":"success"}]}
+```
+
+三点结论：
+
+1. **startup_failure 已消失**：`jobs` 不再为空数组，采集步骤正常执行；
+2. **未勾选提交时走「只产草稿」分支**，不产生任何提交，因此不会因为「没有新数据」红灯；
+3. **即使勾选提交，它开的也是 PR** —— 与第 05 保「main 必须走 PR」一致，
+   规则不会被自己的自动化绕过。
+
 ## 六、外部传播回链清单
 
 外部文章是**入口**，不是知识仓库。规则：

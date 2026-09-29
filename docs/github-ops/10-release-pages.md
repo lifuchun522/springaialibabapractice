@@ -70,13 +70,57 @@
 
 ## 五、命令输出（真实粘贴）
 
-### 5.1 Pages 站点状态
+### 5.1 Pages 站点状态与可访问性
+
+改前未启用：
 
 ```console
 $ gh api repos/lifuchun522/springaialibabapractice/pages
-（改前：{"message":"Not Found"} —— 未启用）
-（部署后见下方「部署后读回」小节）
+{"message":"Not Found"}          ← 未启用
 ```
+
+启用（`build_type=workflow` 对应「GitHub Actions」作为 Source）：
+
+```console
+$ gh api -X POST repos/lifuchun522/springaialibabapractice/pages -f build_type=workflow
+{"build_type":"workflow","html_url":"https://lifuchun522.github.io/springaialibabapractice/",
+ "source":{"branch":"main","path":"/"},"status":null}
+```
+
+首次部署**失败了一次**——工作流已在 `main` 上触发，但 Pages 还没启用：
+
+```console
+$ gh run view 36513239794 --log-failed
+构建站点产物	Run actions/configure-pages@v5
+##[error]Get Pages site failed. Please verify that the repository has Pages enabled and
+configured to build using GitHub Actions, or consider exploring the `enablement` parameter
+for this action. Error: Not Found - https://docs.github.com/rest/pages/pages#get-a-apiname-pages-site
+```
+
+启用后重跑成功：
+
+```console
+$ gh run list --workflow=deploy-pages.yml --limit 2
+success  36514265231
+failure  36513239794     ← 启用之前的那次
+
+$ gh run view 36514265231 --log | grep -E '站点检查通过|站点地址'
+构建站点产物	站点静态检查（门户四块内容是否齐全）
+站点检查通过：四块内容与语言标记齐全
+部署到 Pages	输出部署地址
+站点地址：https://lifuchun522.github.io/springaialibabapractice/
+
+$ 请求站点
+HTTP 200，6592 字节
+含 Quick Start ✓  含 掌次路线 ✓  含 FAQ ✓  含 贡献入口 ✓  含 lang="zh-CN" ✓
+
+$ gh api repos/lifuchun522/springaialibabapractice/pages --jq '{status,html_url,build_type}'
+{"build_type":"workflow","html_url":"https://lifuchun522.github.io/springaialibabapractice/"}
+```
+
+**顺序教训**：Pages 站点必须先启用（声明 `build_type=workflow`），`deploy-pages.yml` 才有意义。
+否则第一次运行必然失败在 `configure-pages` 那一步，而报错只说「verify that the repository has Pages enabled」，
+不会替你去开。
 
 ### 5.2 Release 读回
 
