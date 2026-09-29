@@ -30,14 +30,17 @@ DOC = "docs/ch19-数字人功能升级.md"
 README_ZH = "README.md"
 README_EN = "README.en.md"
 
-# 这五个组件是本掌必须画进架构图的东西。少一个就算失败——
+# 这些组件是本掌必须画进架构图的东西。少一个就算失败——
 # 这条清单就是「架构图少了 5 个组件」那次偏差的回归用例。
+# redis 是后补的第 6 项：它是 livekit-server / livekit-agent 的集群控制（多副本前置条件），
+# 同样属于「预留但必须画出来」的组件，所以一并纳入门禁。
 REQUIRED_COMPONENTS = {
     "livekit-agent": ["livekit-agent", "livekit agent"],
     "livekit-server": ["livekit-server", "livekit server"],
     "tts": ["TTS"],
     "asr": ["ASR"],
     "nacos": ["Nacos", "nacos"],
+    "redis": ["Redis", "redis"],
 }
 
 # 每个组件至少要出现的图（文件名 -> 组件名集合）
@@ -132,7 +135,7 @@ def main():
     rep.add("ch19 文档含「明确不交付」章节", non_delivery is not None)
     if non_delivery:
         body = non_delivery.group(1)
-        for comp in ("livekit-server", "livekit-agent"):
+        for comp in ("livekit-server", "livekit-agent", "Redis"):
             rep.add("非交付清单点名 %s" % comp, comp in body)
 
     # 5. 图注：每张图后面都应有说明它回答什么问题的文字
