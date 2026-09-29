@@ -1,0 +1,20 @@
+# CODEOWNERS（第 05 保）
+#
+# 取舍：**只卡关键路径**，不做全仓库强制审批。
+# 单人维护仓库若对全仓库开 code owner review，会自锁——自己的 PR 也合不进去。
+# 代价是每月多烧至少 2 小时却回不了本，收益却是零。
+#
+# 生效前提（GitHub 规则）：被点名的用户/团队必须对该仓库具备 write 及以上权限。
+# 本仓库当前 owner 权限实测为 admin，满足前提。
+#
+# 语法：路径模式 后面跟 @用户 或 @组织/团队
+
+# 治理配置本身：改它等于改规则，必须过 owner
+/.github/                @lifuchun522
+/openspec/               @lifuchun522
+
+# 运维脚本：这些脚本会写远端配置（Topics / 标签 / ruleset / 指标），改错影响面大
+/scripts/                @lifuchun522
+
+# 治理文档与证据：快照与验收记录的准确性直接决定审计能不能信
+/docs/github-ops/        @lifuchun522
