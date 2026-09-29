@@ -69,6 +69,14 @@ jobs:
         # 只依赖 Python 标准库，不联网、不鉴权，因此不会因外部抖动红灯。
         run: python3 scripts/check-github-ops-links.py
 
+      - name: 工作流启动门禁（第 08 保）
+        # 第三个实例，且是最难查的一个：gh-ops-weekly.yml 曾因 `with.path` 里写了
+        # `$(date ...)` 命令替换，在**启动阶段**就失败——日志为空、jobs 为空数组，
+        # `gh run view --log-failed` 报 log not found，没有任何线索指向真正原因。
+        # 这道门禁检查「启动即失败」的最小充分条件：顶层 on/jobs、每个 job 有 runs-on、
+        # 动作参数里没有 `$(`、没有跨行 --body。
+        run: python3 scripts/check-workflows.py
+
       - name: 上传测试报告
         if: always()
         uses: actions/upload-artifact@v4
