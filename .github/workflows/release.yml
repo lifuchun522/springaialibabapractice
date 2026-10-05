@@ -116,7 +116,7 @@ jobs:
         run: ./mvnw -B -ntp -DskipTests package
 
       - name: 登录镜像仓库
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ vars.DOCKER_REGISTRY }}
           username: ${{ vars.DOCKER_USERNAME }}
