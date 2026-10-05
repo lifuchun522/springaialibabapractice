@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.10</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
 
@@ -24,8 +24,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- 生产基线：Spring AI Alibaba v1.1.2.2（Latest），配套 Spring AI 1.1.2 / Spring Boot 3.5.10
              v2.0.0-M1.1 属 Pre-release，只作观察线，不进生产 -->
-        <spring-ai.version>1.1.2</spring-ai.version>
-        <spring-ai-alibaba.version>1.1.2.2</spring-ai-alibaba.version>
+        <spring-ai.version>1.1.8</spring-ai.version>
+        <spring-ai-alibaba.version>1.1.2.3</spring-ai-alibaba.version>
 
         <!--
           第 15 掌：五层测试的 tag 隔离。
@@ -110,7 +110,7 @@
             <dependency>
                 <groupId>com.alibaba.nacos</groupId>
                 <artifactId>nacos-client</artifactId>
-                <version>2.4.3</version>
+                <version>3.2.4</version>
             </dependency>
 
             <!--
