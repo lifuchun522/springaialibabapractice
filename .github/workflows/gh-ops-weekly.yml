@@ -41,7 +41,7 @@ jobs:
     name: 采集运营指标
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 采集四类指标
         env:

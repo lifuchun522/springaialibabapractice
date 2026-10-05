@@ -33,7 +33,7 @@ jobs:
     name: 构建站点产物
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 站点静态检查（门户四块内容是否齐全）
         # 门户首页必须含 Quick Start / 掌次路线 / FAQ / 贡献入口四块，

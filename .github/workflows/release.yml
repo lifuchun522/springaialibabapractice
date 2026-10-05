@@ -41,7 +41,7 @@ jobs:
       unique_tag: ${{ steps.tag.outputs.unique_tag }}
       maven_version: ${{ steps.tag.outputs.maven_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 安装 JDK 21
         uses: actions/setup-java@v4
@@ -71,7 +71,7 @@ jobs:
     if: ${{ !inputs.skip_maven }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 安装 JDK 21
         uses: actions/setup-java@v4
@@ -103,7 +103,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 安装 JDK 21
         uses: actions/setup-java@v4
@@ -150,7 +150,7 @@ jobs:
     if: ${{ !inputs.skip_deploy }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 准备 SSH
         env:
@@ -193,7 +193,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 发送结果
         env:
